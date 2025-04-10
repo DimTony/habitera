@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,23 +11,23 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { AntDesign } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width, height } = Dimensions.get("window");
 
 const LandingScreen = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [nextImageIndex, setNextImageIndex] = useState(1);
-  const fadeAnim1 = useState(new Animated.Value(1))[0];
-  const fadeAnim2 = useState(new Animated.Value(0))[0];
+  const [fadeAnim1] = useState(new Animated.Value(1));
+  const [fadeAnim2] = useState(new Animated.Value(0));
   const [activeImage, setActiveImage] = useState(1); // 1 or 2
   const router = useRouter();
 
   // Sample image URLs (replace with your actual image URLs)
-  // For React Native, you should use require for local images or full URLs for remote images
   const images = [
-    require("../assets/images/image1.png"), // Replace with your actual image paths
+    require("../assets/images/image1.png"),
     require("../assets/images/image2.png"),
     require("../assets/images/image3.png"),
+    require("../assets/images/image4.png"), // Added fourth image
   ];
 
   // Individual text for each image
@@ -47,61 +47,111 @@ const LandingScreen = () => {
       description:
         "Finding your dream home is the first step to a new beginning. Whether you seek comfort, style, or space, that dream place is waiting for you on Habitera.",
     },
+    {
+      title: "Your Dream Home, Your Trusted Partner",
+      description:
+        "Continue as a user looking for your dream home or as an agent helping others find theirs. Your Habitera journey begins now.",
+    },
   ];
 
-  // Handle the cross-fade transition effect
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      const newNextImageIndex = (currentImageIndex + 1) % images.length;
-      setNextImageIndex(newNextImageIndex);
+  // Handle manual image transition
+  const goToNextImage = () => {
+    const nextImageIndex = (currentImageIndex + 1) % images.length;
 
-      if (activeImage === 1) {
-        // Fade out image 1, fade in image 2
-        Animated.parallel([
-          Animated.timing(fadeAnim1, {
-            toValue: 0,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim2, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          setCurrentImageIndex(newNextImageIndex);
-          setActiveImage(2);
-        });
-      } else {
-        // Fade out image 2, fade in image 1
-        Animated.parallel([
-          Animated.timing(fadeAnim2, {
-            toValue: 0,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim1, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          setCurrentImageIndex(newNextImageIndex);
-          setActiveImage(1);
-        });
-      }
-    }, 5000); // Change image every 5 seconds
+    if (activeImage === 1) {
+      // Fade out image 1, fade in image 2
+      Animated.parallel([
+        Animated.timing(fadeAnim1, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim2, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCurrentImageIndex(nextImageIndex);
+        setActiveImage(2);
+      });
+    } else {
+      // Fade out image 2, fade in image 1
+      Animated.parallel([
+        Animated.timing(fadeAnim2, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim1, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCurrentImageIndex(nextImageIndex);
+        setActiveImage(1);
+      });
+    }
+  };
 
-    return () => clearInterval(intervalId);
-  }, [currentImageIndex, activeImage]);
+  // Skip to the last image (4th image)
+  const skipToLastImage = () => {
+    const lastImageIndex = images.length - 1;
 
-  const navigateToOnboarding = () => {
-    router.push("/onboarding");
+    if (activeImage === 1) {
+      Animated.parallel([
+        Animated.timing(fadeAnim1, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim2, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCurrentImageIndex(lastImageIndex);
+        setActiveImage(2);
+      });
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim2, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim1, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCurrentImageIndex(lastImageIndex);
+        setActiveImage(1);
+      });
+    }
+  };
+
+  const navigateAsUser = () => {
+    router.push("/onboarding?role=user");
+  };
+
+  const navigateAsAgent = () => {
+    router.push("/onboarding?role=agent");
   };
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
+
+      {/* Skip button */}
+      {currentImageIndex < 3 && (
+        <TouchableOpacity style={styles.skipButton} onPress={skipToLastImage}>
+          <Text style={styles.skipButtonText}>Skip</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Image carousel container */}
       <View style={styles.carouselContainer}>
@@ -114,7 +164,11 @@ const LandingScreen = () => {
         >
           <Image
             source={
-              images[activeImage === 1 ? currentImageIndex : nextImageIndex]
+              images[
+                activeImage === 1
+                  ? currentImageIndex
+                  : (currentImageIndex + 1) % images.length
+              ]
             }
             style={styles.image}
             resizeMode="cover"
@@ -126,14 +180,18 @@ const LandingScreen = () => {
               <Text style={styles.title}>
                 {
                   imageTexts[
-                    activeImage === 1 ? currentImageIndex : nextImageIndex
+                    activeImage === 1
+                      ? currentImageIndex
+                      : (currentImageIndex + 1) % images.length
                   ].title
                 }
               </Text>
               <Text style={styles.description}>
                 {
                   imageTexts[
-                    activeImage === 1 ? currentImageIndex : nextImageIndex
+                    activeImage === 1
+                      ? currentImageIndex
+                      : (currentImageIndex + 1) % images.length
                   ].description
                 }
               </Text>
@@ -149,7 +207,11 @@ const LandingScreen = () => {
         >
           <Image
             source={
-              images[activeImage === 2 ? currentImageIndex : nextImageIndex]
+              images[
+                activeImage === 2
+                  ? currentImageIndex
+                  : (currentImageIndex + 1) % images.length
+              ]
             }
             style={styles.image}
             resizeMode="cover"
@@ -161,14 +223,18 @@ const LandingScreen = () => {
               <Text style={styles.title}>
                 {
                   imageTexts[
-                    activeImage === 2 ? currentImageIndex : nextImageIndex
+                    activeImage === 2
+                      ? currentImageIndex
+                      : (currentImageIndex + 1) % images.length
                   ].title
                 }
               </Text>
               <Text style={styles.description}>
                 {
                   imageTexts[
-                    activeImage === 2 ? currentImageIndex : nextImageIndex
+                    activeImage === 2
+                      ? currentImageIndex
+                      : (currentImageIndex + 1) % images.length
                   ].description
                 }
               </Text>
@@ -176,16 +242,7 @@ const LandingScreen = () => {
           </View>
         </Animated.View>
 
-        {/* <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={navigateToOnboarding}
-          >
-            <Text style={styles.buttonText}>Get Started</Text>
-          </TouchableOpacity>
-        </View> */}
-
-        {/* Image indicator dots with arrow button */}
+        {/* Image indicator dots with arrow button or action buttons */}
         <View style={styles.bottomControlsContainer}>
           <View style={styles.indicatorContainer}>
             {images.map((_, index) => (
@@ -201,12 +258,44 @@ const LandingScreen = () => {
             ))}
           </View>
 
-          <TouchableOpacity
-            style={styles.arrowButton}
-            onPress={navigateToOnboarding}
-          >
-            <AntDesign name="arrowright" size={24} color="black" />
-          </TouchableOpacity>
+          {/* Show either the arrow button or the action buttons based on current image */}
+          {currentImageIndex < 3 ? (
+            <TouchableOpacity
+              style={styles.arrowButton}
+              onPress={goToNextImage}
+            >
+              <AntDesign name="arrowright" size={24} color="black" />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.actionButtonsContainer}>
+              <View style={styles.buttonsRow}>
+                <TouchableOpacity
+                  style={styles.primaryButtonContainer}
+                  onPress={navigateAsUser}
+                >
+                  <LinearGradient
+                    colors={["#678B83", "#475C57"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.primaryButton}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      Continue as user
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={navigateAsAgent}
+                >
+                  <Text style={styles.secondaryButtonText}>
+                    Continue as agent
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
       </View>
     </View>
@@ -215,12 +304,11 @@ const LandingScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-      flex: 1,
-      backgroundColor: "#f5f5f5",
-    //   paddingBottom: 100
+    flex: 1,
+    backgroundColor: "#f5f5f5",
   },
   carouselContainer: {
-    height: height, // Full screen height
+    height: height,
     width: width,
     position: "relative",
   },
@@ -247,21 +335,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 400,
+    fontWeight: "400",
     color: "white",
     marginBottom: 16,
     textAlign: "center",
     fontFamily: "Bahnschrift",
   },
   description: {
-    fontWeight: 300,
+    fontWeight: "300",
     fontSize: 12,
     color: "white",
     marginBottom: 24,
     textAlign: "center",
     fontFamily: "Bahnschrift",
     lineHeight: 18,
-    letterSpacing: 0
+    letterSpacing: 0,
   },
   bottomControlsContainer: {
     position: "absolute",
@@ -296,24 +384,60 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
-  buttonContainer: {
+  skipButton: {
     position: "absolute",
-    top: "50%",
-    width: "100%",
-    alignItems: "center",
-    paddingVertical: 24,
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 10,
   },
-  button: {
-    backgroundColor: "#3b82f6",
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 10,
-    elevation: 3,
-  },
-  buttonText: {
+  skipButtonText: {
     color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  actionButtonsContainer: {
+    width: "80%",
+    marginTop: 8,
+    alignItems: "center",
+  },
+  buttonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  primaryButtonContainer: {
+    flex: 1,
+    marginRight: 8,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  primaryButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    flex: 1,
+  },
+  primaryButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "500",
+    fontFamily: "Bahnschrift",
+  },
+  secondaryButton: {
+    backgroundColor: "white",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    flex: 1,
+    marginLeft: 8,
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    color: "#678B83",
+    fontSize: 14,
+    fontWeight: "500",
+    fontFamily: "Bahnschrift",
   },
 });
 
