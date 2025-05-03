@@ -41,15 +41,15 @@ const MainApp = () => {
         <AuthNavigator />
       ) : (
         // Show the appropriate dashboard based on user type
-        <SafeAreaView className="flex-">
-          <View className="flex-row items-center justify-between bg-emerald-600 p-4">
+        <SafeAreaView style={{ flex: 1 }}>
+          {/* <View className="flex-row items-center justify-between bg-emerald-600 p-4">
             <Text className="text-xl font-bold text-white">
               {userType === 'user' ? 'User Dashboard' : 'Agent Dashboard'}
             </Text>
             <TouchableOpacity className="rounded-lg bg-white px-4 py-24" onPress={handleLogout}>
               <Text className="font-medium text-emerald-600">Logout</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
 
           {renderAuthenticatedContent()}
         </SafeAreaView>

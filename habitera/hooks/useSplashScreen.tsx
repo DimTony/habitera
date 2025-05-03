@@ -29,6 +29,10 @@ export const useSplashScreen = (
       try {
         // Keep the splash screen visible while we prepare resources
         await SplashScreen.preventAutoHideAsync();
+        SplashScreen.setOptions({
+          duration: 1000,
+          fade: true,
+        });
 
         // Add any data fetching logic here
         // Example: await fetchDataFromAPI();
