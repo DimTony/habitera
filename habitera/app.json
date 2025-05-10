@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "habitera",
+    "slug": "habitera",
+    "version": "1.0.0",
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "experiments": {
+      "tsconfigPaths": true
+    },
+    "plugins": [],
+    "orientation": "portrait",
+    "icon": "./assets/images/splash-full.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/splash-full.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#678B83"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.habitera"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/splash-full.png",
+        "backgroundColor": "#678B83"
+      },
+      "package": "com.anonymous.habitera"
+    }
+  }
+}
