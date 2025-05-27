@@ -1,6 +1,9 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { useAppStore } from 'stores/useAppStore';
 
 const AgentApp = () => {
+  const { resetState, themeColors } = useAppStore();
+
   return (
     <ScrollView className="flex-1 bg-gray-100">
       <View className="p-6">
@@ -23,6 +26,12 @@ const AgentApp = () => {
           <Text className="mb-3 text-gray-600">You currently have 0 active listings.</Text>
           <TouchableOpacity className="self-start rounded-lg bg-emerald-600 px-4 py-2">
             <Text className="font-medium text-white">Add New Listing</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ backgroundColor: themeColors.primaryColor }}
+            className="mt-4 rounded-lg px-4 py-2"
+            onPress={() => resetState()}>
+            <Text className="font-medium text-white">Reset App</Text>
           </TouchableOpacity>
         </View>
 
