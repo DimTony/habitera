@@ -9,7 +9,7 @@ const colorPalettes = {
     text: '#333333', // Dark text
   },
   agent: {
-    primary: '#3E5C76', // Blue shade
+    primary: '#000', // black
     secondary: '#748CAB', // Light blue
     accent: '#F1AB86', // Orange accent
     background: '#F7F9FC', // Light blue-gray
