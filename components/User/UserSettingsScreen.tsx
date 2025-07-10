@@ -24,7 +24,7 @@ const UserSettingsScreen = () => {
       id: 2,
       title: 'Notification Settings',
       icon: 'notifications-outline',
-      onPress: () => console.log('Notification Settings pressed'),
+      onPress: () => console.log('Notification Settings pressed, were fixing this now'),
     },
     {
       id: 3,
