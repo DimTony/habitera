@@ -6,12 +6,14 @@ import TabsLayout from './TabsLayout';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types/navigation';
 import { useNavigation } from '@react-navigation/native';
+import { useToastStore } from 'stores/useToastStore';
 
 const UserSettingsScreen = () => {
   type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'MainTabs'>;
   const navigation = useNavigation<SettingsScreenNavigationProp>();
 
   const { resetState } = useAppStore();
+  const { showToast } = useToastStore();
 
   const settingsItems = [
     {
@@ -24,7 +26,12 @@ const UserSettingsScreen = () => {
       id: 2,
       title: 'Notification Settings',
       icon: 'notifications-outline',
-      onPress: () => console.log('Notification Settings pressed, were fixing this now'),
+      onPress: () => showToast({
+          message: 'Coming soon!',
+          type: 'success',
+          duration: 3000,
+        }),
+      // onPress: () => console.log('Notification Settings pressed, were fixing this now'),
     },
     {
       id: 3,
@@ -36,13 +43,21 @@ const UserSettingsScreen = () => {
       id: 4,
       title: 'About Us',
       icon: 'information-circle-outline',
-      onPress: () => console.log('About Us pressed'),
+      onPress: () => showToast({
+          message: 'Coming soon!',
+          type: 'success',
+          duration: 3000,
+        }),
     },
     {
       id: 5,
       title: 'Customer Support',
       icon: 'headset-outline',
-      onPress: () => console.log('Customer Support pressed'),
+      onPress: () => showToast({
+          message: 'Coming soon!',
+          type: 'success',
+          duration: 3000,
+        }),
     },
   ];
 
