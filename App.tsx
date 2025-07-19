@@ -8,6 +8,7 @@ import MainApp from 'screens/MainApp';
 import useSplashScreen from './hooks/useSplashScreen';
 import { useAppStore } from './stores/useAppStore';
 import './global.css';
+import ToastContainer from 'components/User/Shared/Toasts/ToastContainer';
 
 const App: React.FC = () => {
   const { appIsReady, onLayoutRootView, showAnimatedSplash, setShowAnimatedSplash } =
@@ -32,6 +33,7 @@ const App: React.FC = () => {
     <StoreProvider>
       <View className="flex-1" onLayout={onLayoutRootView}>
         <StatusBar barStyle="light-content" backgroundColor="#678B83" translucent />
+        <ToastContainer />
 
         {showAnimatedSplash ? (
           <AnimatedSplash onFinish={handleAnimatedSplashFinish} />
