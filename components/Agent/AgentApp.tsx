@@ -105,6 +105,7 @@ const AgentApp = () => {
             paddingHorizontal: 15,
             // width: tabBarWidth / 5,
           },
+          
         })}
         // Use a custom tab bar to ensure proper spacing
         tabBar={(props) => <CustomTabBar {...props} />}>
@@ -190,10 +191,10 @@ const CustomTabBar = ({ state, descriptors, navigation, tabBarWidth }: any) => {
 
 const styles = StyleSheet.create({
   tabBarContainer: {
-    // position: 'absolute',
-    // bottom: 30,
-    // left: 0,
-    // right: 0,
+    position: 'absolute',
+    bottom: 30,
+    left: 0,
+    // paddingBottom: 30,
     backgroundColor: 'transparent',
     width: '100%',
     alignItems: 'center', // Center the tab bar horizontally
@@ -204,7 +205,7 @@ const styles = StyleSheet.create({
     // left: '5%',
     elevation: 5,
     backgroundColor: '#fff',
-    borderRadius: 15,
+    borderRadius: 20,
     height: 60,
     shadowColor: '#000',
     shadowOffset: {
@@ -215,7 +216,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     flexDirection: 'row',
     alignSelf: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 30,
     width: '70%',
     display: 'flex',
     justifyContent: 'space-between',
@@ -224,7 +225,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 10,
+    // paddingTop: 10,
     height: '100%',
     // backgroundColor: 'red',
   },

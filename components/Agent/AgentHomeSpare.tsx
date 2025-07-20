@@ -16,10 +16,7 @@ import { ThemedText } from 'components/ThemedText';
 import { generateStableGradientPair, getInitials } from 'lib/helpers';
 import useSession from 'hooks/useSession';
 import { useAppStore } from 'stores/useAppStore';
-import { Edit, LocationPin, MailIcon, PhoneIncoming } from 'components/Svg';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AntDesign, SimpleLineIcons } from '@expo/vector-icons';
-import { useFonts } from 'expo-font';
+import { Edit, MailIcon, PhoneIncoming } from 'components/Svg';
 
 // No Properties Content (when no listings exist)
 const NoPropertyScreen = () => (
@@ -74,85 +71,14 @@ const ActiveListingsContent = ({ properties }: { properties: any }) => {
         //   </View>
         // </View>
 
-        // <View style={styles.propertyCard}>
-        // <Image
-        //   // source={{ uri: 'https://i.postimg.cc/Bn9tY81h/bolaji-agbede-2.png' }}
-        //   source={require('../../assets/images/onboarding-3.png')}
-        //   style={styles.propertyImage}
-        // />
-        //   <View style={styles.propertyInfo}>
-        //     {/* <ThemedText
-        //     // style={styles.propertyTitle}
-        //     style={{fontFamily: 'CrimsonPro'}}
-        //     >Clement Pro</ThemedText> */}
-        // <Text style={{ fontFamily: 'Bahnschrift', fontSize: 16, marginBottom: 10 }}>
-        //   Clement
-        // </Text>
-
-        // <View
-        //   style={{ flexDirection: 'row', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
-        //   <LocationPin />
-        //   <Text
-        //     style={{
-        //       fontFamily: 'Bahnschrift',
-        //       fontWeight: 300,
-        //       fontSize: 12,
-        //       color: '#818181',
-        //       width: '100%',
-        //     }}>
-        //     19. Adeniran Ogunsanya Street, Surulere, Lagos
-        //   </Text>
-        // </View>
-        //   </View>
-        // </View>
-
-        <View
-          style={{
-            flexDirection: 'row',
-            backgroundColor: '#fff',
-            paddingHorizontal: 8,
-            paddingVertical: 10,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
-            gap: 10,
-            borderRadius: 18,
-            marginBottom: 16,
-          }}>
+        <View style={styles.propertyCard}>
           <Image
+            // source={{ uri: 'https://i.postimg.cc/Bn9tY81h/bolaji-agbede-2.png' }}
             source={require('../../assets/images/onboarding-3.png')}
             style={styles.propertyImage}
           />
-
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: 'Bahnschrift', fontSize: 16, marginBottom: 10 }}>
-              Clement
-            </Text>
-
-            <View
-              style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-              <LocationPin />
-              <Text
-                numberOfLines={2} // optional: limit to 2 lines and ellipsize
-                ellipsizeMode="tail"
-                style={{
-                  fontFamily: 'Bahnschrift',
-                  fontWeight: '300',
-                  fontSize: 12,
-                  color: '#818181',
-                  flexShrink: 1,
-                }}>
-                19. Adeniran Ogunsanya Street, Surulere, Lagos
-              </Text>
-            </View>
-
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 30}}>
-<View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-  
-</View>
-            </View>
+          <View style={styles.propertyInfo}>
+            <ThemedText style={styles.propertyTitle}>Clement Properties</ThemedText>
           </View>
         </View>
       )}
@@ -240,7 +166,6 @@ const InactiveListingsContent = ({ properties }: { properties: any }) => {
 
 const AgentHomeScreen = () => {
   const { user, resetState } = useAppStore();
-  const insets = useSafeAreaInsets();
   const [properties, setProperties] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<
     'Active Listings' | 'Under Review' | 'Inactive Listings'
@@ -302,11 +227,6 @@ const AgentHomeScreen = () => {
     ]);
   }, [user]);
 
-  const [fontsLoaded] = useFonts({
-    Bahnschrift: require('../../assets/fonts/BAHNSCHRIFT.ttf'),
-    // Bahnschrift1: require('../../assets/fonts/BAHNSCHRIFT.TTF'),
-  });
-
   const tabs = ['Active Listings', 'Under Review', 'Inactive Listings'];
 
   const TabButton = ({
@@ -350,16 +270,7 @@ const AgentHomeScreen = () => {
 
   return (
     <>
-      {/* <SafeAreaView style={[styles.container,  {
-            paddingTop: insets.top,
-          },]}> */}
-      <View
-        style={[
-          styles.container,
-          {
-            paddingTop: insets.top,
-          },
-        ]}>
+      <SafeAreaView style={styles.container}>
         {/* Header Section */}
         <View style={styles.header}>
           <View style={styles.profileSection}>
@@ -443,18 +354,7 @@ const AgentHomeScreen = () => {
 
         {/* Main Content - Conditionally rendered based on active tab */}
         <View style={styles.content}>{renderTabContent()}</View>
-
-        {/* <TouchableOpacity style={{ position: 'absolute', backgroundColor: '#000', borderRadius: '100%', width: 50, height: 50, bottom: "15%", right: '10%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{color: '#fff', fontSize: 30}}>+</Text>
-        </TouchableOpacity> */}
-
-        <TouchableOpacity style={{ position: 'absolute', bottom: '15%', right: '6%' }}>
-          <AntDesign name="pluscircle" size={50} color="black" />
-          {/* <SimpleLineIcons name="plus" size={50} color="white" style={{backgroundColor: 'black', borderRadius: '100%'}} /> */}
-        </TouchableOpacity>
-      </View>
-
-      {/* </SafeAreaView> */}
+      </SafeAreaView>
     </>
   );
 };
@@ -462,7 +362,6 @@ const AgentHomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: 'red',
     backgroundColor: '#f8f9fa',
   },
   header: {
@@ -575,7 +474,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     backgroundColor: '#ffffff',
-    // marginBottom: 200,
   },
   // Original NoPropertyScreen styles
   noPropertiesContent: {
@@ -665,16 +563,12 @@ const styles = StyleSheet.create({
   },
   propertyInfo: {
     paddingVertical: 12,
-    // gap: 4,
-    width: '62%',
-    // backgroundColor: 'red',
   },
   propertyTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#1a1a1a',
     marginBottom: 4,
-    fontFamily: 'Cabin',
   },
   propertyLocation: {
     fontSize: 14,

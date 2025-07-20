@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import axios from 'axios';
 import SwitchIcon from 'components/Icons/SwitchIcon';
 import { AuthStackParamList } from 'components/Navigation/AuthNavigator';
+import { BaseUrl, SubscriptionKey } from 'constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { Formik } from 'formik';
 import React, { useState } from 'react';
@@ -14,10 +16,17 @@ import {
   ScrollView,
   StyleSheet,
   Image,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { RFValue } from 'react-native-responsive-fontsize';
+// import * as LocalAuthentication from 'expo-local-authentication';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from 'stores/useAppStore';
 import * as Yup from 'yup';
+import { useRouter } from 'expo-router';
+import { ThemedText } from 'components/ThemedText';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -27,20 +36,79 @@ const LoginSchema = Yup.object().shape({
   password: Yup.string().required('Password is required'),
 });
 
+const DEV_EMAIL = 'bolaji.agbede@theaccesscorporation.com';
+const DEV_PASSWORD = 'retreat2025';
+
 const Login = () => {
+  const router = useRouter();
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { setAuthenticated, userType, setUserType, themeColors } = useAppStore();
+  const { setAuthenticated, userType, setUserType, themeColors, setUser } = useAppStore();
 
   // State for password visibility
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (values: { email: string; password: string }) => {
+  const handleLogin = async (values: { email: string; password: string }) => {
     // Here you would normally call an API to authenticate the user
-    console.log('Form values:', values);
+    // console.log('Form values:', values);
 
     // Mock login success
     // In a real app, you'd call your authentication API here
     setAuthenticated(true);
+  };
+
+  const handleAutoLogin = async () => {
+    // Here you would normally call an API to authenticate the user
+    // console.log('Form values:', values);
+    const values = { email: DEV_EMAIL, password: DEV_PASSWORD };
+
+    // Mock login success
+    // In a real app, you'd call your authentication API here
+
+    if (userType === 'agent') {
+      try {
+        setIsLoading(true);
+
+        // const response = await axios.post(
+        //   `${BaseUrl}/user/login`,
+        //   // { email: DEV_EMAIL, password: DEV_PASSWORD },
+        //   values,
+        //   {
+        //     headers: {
+        //       'Content-Type': 'application/json',
+        //       'Ocp-Apim-Subscription-Key': SubscriptionKey,
+        //     },
+        //   }
+        // );
+
+        // // const data = response
+        const session = {
+          email: DEV_EMAIL,
+          password: DEV_PASSWORD,
+          firstName: 'Bolaji',
+          lastName: 'Agbede',
+          phoneNumber: '+2348031234567',
+          userType: 'agent',
+        }
+
+        // const session = response.data.data;
+        // // console.log('rrrrr', session);
+        await AsyncStorage.setItem('session', JSON.stringify(session));
+        setUser(session)
+        await SecureStore.setItemAsync('user_email', values.email);
+        await SecureStore.setItemAsync('user_password', values.password);
+        // setHasStoredCredentials(true);
+
+        // navigation.navigate('Modal' as any);
+        setAuthenticated(true);
+      } catch (error: any) {
+        console.error('Login error:', error?.message);
+        Alert.alert('Failed', 'Invalid email or password.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    // setAuthenticated(true);
   };
 
   // Regular input field component
@@ -135,7 +203,7 @@ const Login = () => {
               password: '',
             }}
             validationSchema={LoginSchema}
-            onSubmit={handleLogin}>
+            onSubmit={userType === 'agent' ? handleAutoLogin : handleLogin}>
             {({
               handleChange,
               handleBlur,
@@ -194,6 +262,15 @@ const Login = () => {
                   onPress={() => handleSubmit()}>
                   <Text className="text-lg font-bold text-white">Log in</Text>
                 </TouchableOpacity>
+
+                {__DEV__ && (
+                  <TouchableOpacity
+                    style={styles.autoLoginButton}
+                    onPress={() => handleAutoLogin()}
+                    disabled={isLoading}>
+                    <ThemedText style={styles.autoLoginButtonText}>🚀 AUTOLOGIN (DEV)</ThemedText>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </Formik>
@@ -293,6 +370,21 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 5,
+  },
+  autoLoginButton: {
+    backgroundColor: '#28a745',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+    borderWidth: 2,
+    borderColor: '#20c997',
+  },
+  autoLoginButtonText: {
+    color: 'white',
+    fontSize: RFValue(13),
+    fontWeight: '600',
+    fontFamily: 'Matter',
   },
 });
 

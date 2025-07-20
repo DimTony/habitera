@@ -13,7 +13,7 @@ const App: React.FC = () => {
   const { appIsReady, onLayoutRootView, showAnimatedSplash, setShowAnimatedSplash } =
     useSplashScreen();
 
-  const { hasCompletedOnboarding, setUserType, setOnboardingComplete } = useAppStore();
+  const { hasCompletedOnboarding, setUserType, setOnboardingComplete, resetState } = useAppStore();
 
   const handleAnimatedSplashFinish = () => {
     setShowAnimatedSplash(false);
@@ -23,6 +23,13 @@ const App: React.FC = () => {
     setUserType(type);
     setOnboardingComplete(true);
   };
+  
+  // useEffect(() => {
+  //   if (__DEV__) {
+  //     // Only reset in development mode
+  //     resetState();
+  //   }
+  // }, []);
 
   if (!appIsReady) {
     return null;
@@ -31,7 +38,7 @@ const App: React.FC = () => {
   return (
     <StoreProvider>
       <View className="flex-1" onLayout={onLayoutRootView}>
-        <StatusBar barStyle="light-content" backgroundColor="#678B83" translucent />
+        {/* <StatusBar barStyle="light-content" backgroundColor="#678B83" translucent /> */}
 
         {showAnimatedSplash ? (
           <AnimatedSplash onFinish={handleAnimatedSplashFinish} />

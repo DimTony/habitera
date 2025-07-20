@@ -10,11 +10,10 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme } from "@/components/useColorScheme";
 import Toast from "react-native-toast-message";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import LoadingScreen from "@/components/LoadingScreen";
+import { useColorScheme } from "react-native";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -31,8 +30,11 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-    Bahnschrift: require("../assets/fonts/BAHNSCHRIFT.ttf"),
+    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Bahnschrift: require('../assets/fonts/BAHNSCHRIFT.ttf'),
+    CrimsonPro: require('../assets/fonts/CrimsonPro-Regular.ttf'),
+    Cabin: require('../assets/fonts/Cabin-Regular.ttf'),
+    Din: require('../assets/fonts/DIN Regular.ttf'),
     ...FontAwesome.font,
   });
 
@@ -60,21 +62,20 @@ function RootLayoutNav() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <ThemeProvider
-          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-        >
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             {/* <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen
               name="(auth)"
               options={{ headerShown: false, gestureEnabled: false }}
             /> */}
-            <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           </Stack>
           {/* <StatusBar style="auto" /> */}
-          <LoadingScreen />
+          {/* <LoadingScreen /> */}
           <Toast />
         </ThemeProvider>
       </GestureHandlerRootView>

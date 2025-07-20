@@ -17,3 +17,6 @@ export default {
     tabIconSelected: tintColorDark,
   },
 };
+
+export const SubscriptionKey = '5c9f74a1892843dbb6d9af06ce0e86b4';
+export const BaseUrl = 'http://172.20.10.6:3000';
