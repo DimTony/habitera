@@ -55,6 +55,61 @@ export type RootStackParamList = {
   Profile: undefined;
 };
 
+export type AgentTabParamList = {
+  Home: undefined;
+  Chat: undefined;
+  Settings: undefined;
+};
+
+
+export type AgentRootStackParamList = {
+  MainTabs: NavigatorScreenParams<AgentTabParamList>;
+  // PropertyDetails: {
+  //   propertyId: string;
+  //   propertyName: string;
+  //   location: string;
+  //   bedrooms: number;
+  //   bathrooms: number;
+  //   price: number;
+  //   imageSource: any;
+  //   images: any[];
+  //   // Add more property details as needed
+  //   description?: string;
+  //   amenities?: string[];
+  //   ownerInfo?: {
+  //     name: string;
+  //     image: string;
+  //     rating: number;
+  //     properties: number;
+  //     responseTime: string;
+  //     isVerified: boolean;
+  //   };
+  // };
+  ViewProperty: {
+    propertyId: string;
+  };
+  // PropertyImageGallery: {
+  //   propertyId: string;
+  //   images: any[];
+  // };
+  // ContactOwner: {
+  //   propertyId: string;
+  //   propertyName: string;
+  //   ownerInfo?: {
+  //     name: string;
+  //     image: string;
+  //     rating: number;
+  //     properties: number;
+  //     responseTime: string;
+  //     isVerified: boolean;
+  //   };
+  // };
+  // FilterModal: undefined;
+  // ChangePassword: undefined;
+  AgentChat: undefined;
+  AddProperty: undefined;
+};
+
 // Screen Props Types
 export type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'MainTabs'>;
 export type PropertyDetailsScreenProps = NativeStackScreenProps<

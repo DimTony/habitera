@@ -1,3 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.add-property-tenor {
+  font-size: 0.2rem;
+}

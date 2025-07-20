@@ -379,4 +379,160 @@ export const LocationPin: React.FC<SvgProps> = (props) => (
   </Svg>
 );
 
+export const BedIcon: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={12}
+    height={11}
+    viewBox="0 0 12 11"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path d="M11 8.25H1" stroke="#818181" strokeLinecap="round" strokeLinejoin="round" />
+    <Path
+      d="M11 10V7.5C11 6.5572 11 6.0858 10.7071 5.7929C10.4142 5.5 9.9428 5.5 9 5.5H3C2.05719 5.5 1.58578 5.5 1.29289 5.7929C1 6.0858 1 6.5572 1 7.5V10"
+      stroke="#818181"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M8 5.5V4.8089C8 4.55515 7.95425 4.47027 7.7198 4.37025C7.23155 4.16195 6.6389 4 6 4C5.3611 4 4.76844 4.16195 4.2802 4.37025C4.04577 4.47027 4 4.55515 4 4.8089V5.5"
+      stroke="#818181"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M1.5 5.5V4C1.5 3.2929 1.5 2.93934 1.71967 2.71967C1.93934 2.5 2.2929 2.5 3 2.5C3.13737 2.5 3.32843 2.53636 3.45141 2.47006C3.50695 2.44013 3.55674 2.36444 3.65634 2.21308C4.1346 1.48623 5.1123 1 6 1C6.8877 1 7.8654 1.48623 8.34365 2.21308C8.44325 2.36444 8.49305 2.44013 8.5486 2.47006C8.6716 2.53636 8.8626 2.5 9 2.5C9.7071 2.5 10.0606 2.5 10.2803 2.71967C10.5 2.93934 10.5 3.2929 10.5 4V5.5"
+      stroke="#818181"
+    />
+  </Svg>
+);
+
+export const BathIcon: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={9}
+    height={11}
+    viewBox="0 0 9 11"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path
+      d="M2.80005 5.0498H6.91084C7.57009 5.0498 7.89972 5.0498 8.09875 5.38069C8.29779 5.71157 8.18056 5.92249 7.94611 6.34441C7.48081 7.1819 6.57802 7.7498 5.54059 7.7498C4.84557 7.7498 4.21093 7.49488 3.72786 7.0748"
+      stroke="#818181"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M2.8 5.05V1.9C2.8 1.47574 2.8 1.26361 2.6682 1.1318C2.53639 1 2.32426 1 1.9 1C1.47574 1 1.26361 1 1.1318 1.1318C1 1.26361 1 1.47574 1 1.9V5.05C1 5.47426 1 5.68639 1.1318 5.81819C1.26361 5.95 1.47574 5.95 1.9 5.95C2.32426 5.95 2.53639 5.95 2.6682 5.81819C2.8 5.68639 2.8 5.47426 2.8 5.05Z"
+      stroke="#818181"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path d="M2.34998 3.25H3.69998" stroke="#818181" strokeLinecap="round" strokeLinejoin="round" />
+    <Path
+      d="M6.4 7.7502C5.95 8.2002 6.4 9.5502 7.29982 10.0002H1C1.45 9.5502 2.215 8.1102 1.675 5.9502"
+      stroke="#818181"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+export const TrashIcon: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={12}
+    height={12}
+    viewBox="0 0 12 12"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path d="M1 3H2.11111H11" stroke="black" strokeLinecap="round" strokeLinejoin="round" />
+    <Path
+      d="M9.88886 3V10C9.88886 10.2652 9.7718 10.5196 9.56342 10.7071C9.35505 10.8946 9.07244 11 8.77775 11H3.2222C2.92751 11 2.64489 10.8946 2.43652 10.7071C2.22815 10.5196 2.11108 10.2652 2.11108 10V3M3.77775 3V2C3.77775 1.73478 3.89481 1.48043 4.10319 1.29289C4.31156 1.10536 4.59418 1 4.88886 1H7.11108C7.40577 1 7.68838 1.10536 7.89676 1.29289C8.10513 1.48043 8.22219 1.73478 8.22219 2V3"
+      stroke="black"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path d="M4.88892 5.5V8.5" stroke="black" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M7.11108 5.5V8.5" stroke="black" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const BackArrow: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={17}
+    height={16}
+    viewBox="0 0 17 16"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path
+      d="M16 9C16.5523 9 17 8.55228 17 8C17 7.44772 16.5523 7 16 7V9ZM0.292893 7.29289C-0.0976311 7.68342 -0.0976311 8.31658 0.292893 8.70711L6.65685 15.0711C7.04738 15.4616 7.68054 15.4616 8.07107 15.0711C8.46159 14.6805 8.46159 14.0474 8.07107 13.6569L2.41421 8L8.07107 2.34315C8.46159 1.95262 8.46159 1.31946 8.07107 0.928932C7.68054 0.538408 7.04738 0.538408 6.65685 0.928932L0.292893 7.29289ZM16 8V7L1 7V8V9L16 9V8Z"
+      fill="white"
+    />
+  </Svg>
+);
+
+export const UploadIcon: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={16}
+    height={14}
+    viewBox="0 0 16 14"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path
+      d="M5.13355 9.91667L7.80021 7.25M7.80021 7.25L10.4669 9.91667M7.80021 7.25V13.25M13.1335 10.4119C13.9479 9.73936 14.4669 8.72196 14.4669 7.58333C14.4669 5.55829 12.8253 3.91667 10.8002 3.91667C10.6545 3.91667 10.5183 3.84066 10.4443 3.71516C9.57492 2.23989 7.96983 1.25 6.13355 1.25C3.37212 1.25 1.13354 3.48858 1.13354 6.25C1.13354 7.6274 1.69051 8.87472 2.59151 9.77902"
+      stroke="#475467"
+      strokeWidth={1.33333}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+export const CaretDown: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={20}
+    height={20}
+    viewBox="0 0 20 20"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <G filter="url(#a)">
+      <Circle cx={10} cy={10} r={8} fill="#D9D9D9" />
+      <Path
+        d="M9.646 12.354a.5.5 0 0 0 .708 0l3.182-3.182a.5.5 0 1 0-.708-.708L10 11.293 7.172 8.464a.5.5 0 1 0-.708.708zM10 11h-.5v1h1v-1z"
+        fill="#000"
+      />
+    </G>
+    <Defs></Defs>
+  </Svg>
+);
+
+export const CalendarIcon: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={16}
+    height={16}
+    viewBox="0 0 16 16"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path
+      d="M12.6667 2.6665H3.33333C2.59695 2.6665 2 3.26346 2 3.99984V13.3332C2 14.0696 2.59695 14.6665 3.33333 14.6665H12.6667C13.403 14.6665 14 14.0696 14 13.3332V3.99984C14 3.26346 13.403 2.6665 12.6667 2.6665Z"
+      stroke="black"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path d="M10.6666 1.3335V4.00016" stroke="black" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M5.33337 1.3335V4.00016" stroke="black" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M2 6.6665H14" stroke="black" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
 // export default SVGComponent;

@@ -9,6 +9,7 @@ import {
   ScrollView,
   FlatList,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import EvilIcons from '@expo/vector-icons/EvilIcons';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,10 +17,25 @@ import { ThemedText } from 'components/ThemedText';
 import { generateStableGradientPair, getInitials } from 'lib/helpers';
 import useSession from 'hooks/useSession';
 import { useAppStore } from 'stores/useAppStore';
-import { Edit, LocationPin, MailIcon, PhoneIncoming } from 'components/Svg';
+import {
+  BathIcon,
+  BedIcon,
+  Edit,
+  LocationPin,
+  MailIcon,
+  PhoneIncoming,
+  TrashIcon,
+} from 'components/Svg';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AntDesign, SimpleLineIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
+import PropertyItem from './UI/PropertyItem';
+import { useRouter } from 'expo-router';
+import { AgentRootStackParamList } from 'components/User/types/navigation';
+
+const FLOATING_BUTTON_SPACE = 130;
+type HomeScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'MainTabs'>;
 
 // No Properties Content (when no listings exist)
 const NoPropertyScreen = () => (
@@ -41,72 +57,42 @@ const NoPropertyScreen = () => (
   </View>
 );
 
-// Active Listings Content
 const ActiveListingsContent = ({ properties }: { properties: any }) => {
+  const navigation = useNavigation<HomeScreenNavigationProp>();
+
   if (properties.length === 0) {
     return <NoPropertyScreen />;
   }
+
+  const handlePropertyPress: (property: any) => void = (property) => {
+    navigation.navigate('ViewProperty', {
+      propertyId: property.id,
+      // propertyName: property.propertyName,
+      // location: property.location,
+      // bedrooms: property.bedrooms,
+      // bathrooms: property.bathrooms,
+      // price: property.price,
+      // imageSource: property.imageSource,
+      // images: property.images,
+    });
+  };
 
   return (
     <FlatList
       data={properties}
       keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={styles.activeListContainer}
+      contentContainerStyle={[styles.activeListContainer]}
+      // Add these props to ensure proper scrolling behavior
+      showsVerticalScrollIndicator={false}
+      bounces={true}
+      // This ensures the last item can scroll up past the floating button
+      contentInset={{ bottom: FLOATING_BUTTON_SPACE }}
+      contentInsetAdjustmentBehavior="never"
+      // For Android compatibility
+      ListFooterComponent={() => <View style={{ height: FLOATING_BUTTON_SPACE }} />}
       renderItem={({ item }) => (
-        // <View style={styles.propertyCard}>
-        //   <Image source={{ uri: item.image }} style={styles.propertyImage} />
-        //   <View style={styles.propertyInfo}>
-        //     <Text style={styles.propertyTitle}>{item.title}</Text>
-        //     <Text style={styles.propertyLocation}>{item.location}</Text>
-        //     <Text style={styles.propertyPrice}>{item.price}</Text>
-        //     <View style={styles.propertyStats}>
-        //       <Text style={styles.statText}>Views: {item.views}</Text>
-        //       <Text style={styles.statText}>Inquiries: {item.inquiries}</Text>
-        //     </View>
-        //   </View>
-        //   <View style={styles.propertyActions}>
-        //     <TouchableOpacity style={styles.actionButton}>
-        //       <Text style={styles.actionButtonText}>Edit</Text>
-        //     </TouchableOpacity>
-        //     <TouchableOpacity style={[styles.actionButton, styles.deactivateButton]}>
-        //       <Text style={styles.deactivateButtonText}>Deactivate</Text>
-        //     </TouchableOpacity>
-        //   </View>
-        // </View>
-
-        // <View style={styles.propertyCard}>
-        // <Image
-        //   // source={{ uri: 'https://i.postimg.cc/Bn9tY81h/bolaji-agbede-2.png' }}
-        //   source={require('../../assets/images/onboarding-3.png')}
-        //   style={styles.propertyImage}
-        // />
-        //   <View style={styles.propertyInfo}>
-        //     {/* <ThemedText
-        //     // style={styles.propertyTitle}
-        //     style={{fontFamily: 'CrimsonPro'}}
-        //     >Clement Pro</ThemedText> */}
-        // <Text style={{ fontFamily: 'Bahnschrift', fontSize: 16, marginBottom: 10 }}>
-        //   Clement
-        // </Text>
-
-        // <View
-        //   style={{ flexDirection: 'row', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
-        //   <LocationPin />
-        //   <Text
-        //     style={{
-        //       fontFamily: 'Bahnschrift',
-        //       fontWeight: 300,
-        //       fontSize: 12,
-        //       color: '#818181',
-        //       width: '100%',
-        //     }}>
-        //     19. Adeniran Ogunsanya Street, Surulere, Lagos
-        //   </Text>
-        // </View>
-        //   </View>
-        // </View>
-
-        <View
+        <TouchableOpacity
+          onPress={() => handlePropertyPress(item)}
           style={{
             flexDirection: 'row',
             backgroundColor: '#fff',
@@ -126,16 +112,19 @@ const ActiveListingsContent = ({ properties }: { properties: any }) => {
             style={styles.propertyImage}
           />
 
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: 'Bahnschrift', fontSize: 16, marginBottom: 10 }}>
-              Clement
-            </Text>
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'space-between',
+              paddingVertical: 5,
+              paddingHorizontal: 5,
+            }}>
+            <Text style={{ fontFamily: 'Bahnschrift', fontSize: 16 }}>Clement</Text>
 
-            <View
-              style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
               <LocationPin />
               <Text
-                numberOfLines={2} // optional: limit to 2 lines and ellipsize
+                numberOfLines={2}
                 ellipsizeMode="tail"
                 style={{
                   fontFamily: 'Bahnschrift',
@@ -148,19 +137,45 @@ const ActiveListingsContent = ({ properties }: { properties: any }) => {
               </Text>
             </View>
 
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 30}}>
-<View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-  
-</View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <BedIcon />
+                <Text style={{ fontSize: 11, color: '#818181', fontFamily: 'Bahnschrift' }}>2</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <BathIcon />
+                <Text style={{ fontSize: 11, color: '#818181', fontFamily: 'Bahnschrift' }}>2</Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={{ gap: 5 }}>
+                <Text style={{ fontSize: 10, color: '#818181', fontFamily: 'Bahnschrift' }}>
+                  Price
+                </Text>
+                <Text style={{ fontFamily: 'Bahnschrift', fontSize: 14 }}>#1,200,000/year</Text>
+              </View>
+              <TouchableOpacity
+                style={{
+                  borderWidth: 1,
+                  borderColor: 'gray',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 15, // Changed from '100%' to numeric value
+                  width: 30,
+                  height: 30,
+                }}>
+                <TrashIcon />
+              </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       )}
     />
   );
 };
 
-// Under Review Content
 const UnderReviewContent = ({ properties }: { properties: any }) => {
   const reviewProperties = properties.filter((p: any) => p.status === 'review');
 
@@ -172,32 +187,17 @@ const UnderReviewContent = ({ properties }: { properties: any }) => {
     <FlatList
       data={reviewProperties}
       keyExtractor={(item) => item.id.toString()}
-      renderItem={({ item }) => (
-        <View style={styles.propertyCard}>
-          <Image source={{ uri: item.image }} style={styles.propertyImage} />
-          <View style={styles.propertyInfo}>
-            <Text style={styles.propertyTitle}>{item.title}</Text>
-            <Text style={styles.propertyLocation}>{item.location}</Text>
-            <Text style={styles.propertyPrice}>{item.price}</Text>
-            <View style={styles.reviewStatus}>
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>Pending Review</Text>
-              </View>
-              <Text style={styles.reviewTime}>Submitted {item.submittedDays} days ago</Text>
-            </View>
-          </View>
-          <View style={styles.propertyActions}>
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.actionButtonText}>View</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+      contentContainerStyle={[styles.activeListContainer]}
+      showsVerticalScrollIndicator={false}
+      bounces={true}
+      contentInset={{ bottom: FLOATING_BUTTON_SPACE }}
+      contentInsetAdjustmentBehavior="never"
+      ListFooterComponent={() => <View style={{ height: FLOATING_BUTTON_SPACE }} />}
+      renderItem={({ item }) => <PropertyItem />}
     />
   );
 };
 
-// Inactive Listings Content
 const InactiveListingsContent = ({ properties }: { properties: any }) => {
   const inactiveProperties = properties.filter((p: any) => p.status === 'inactive');
 
@@ -209,6 +209,16 @@ const InactiveListingsContent = ({ properties }: { properties: any }) => {
     <FlatList
       data={inactiveProperties}
       keyExtractor={(item) => item.id.toString()}
+      contentContainerStyle={{
+        paddingHorizontal: 24,
+      }}
+      showsVerticalScrollIndicator={false}
+      bounces={true}
+      // This ensures the last item can scroll up past the floating button
+      contentInset={{ bottom: FLOATING_BUTTON_SPACE }}
+      contentInsetAdjustmentBehavior="never"
+      // For Android compatibility
+      ListFooterComponent={() => <View style={{ height: FLOATING_BUTTON_SPACE }} />}
       renderItem={({ item }) => (
         <View style={[styles.propertyCard, styles.inactiveCard]}>
           <Image
@@ -240,6 +250,8 @@ const InactiveListingsContent = ({ properties }: { properties: any }) => {
 
 const AgentHomeScreen = () => {
   const { user, resetState } = useAppStore();
+  const router = useRouter();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
   const [properties, setProperties] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<
@@ -356,9 +368,9 @@ const AgentHomeScreen = () => {
       <View
         style={[
           styles.container,
-          {
-            paddingTop: insets.top,
-          },
+          // {
+          //   paddingTop: insets.top,
+          // },
         ]}>
         {/* Header Section */}
         <View style={styles.header}>
@@ -448,7 +460,9 @@ const AgentHomeScreen = () => {
           <Text style={{color: '#fff', fontSize: 30}}>+</Text>
         </TouchableOpacity> */}
 
-        <TouchableOpacity style={{ position: 'absolute', bottom: '15%', right: '6%' }}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('AddProperty')}
+          style={{ position: 'absolute', bottom: '15%', right: '6%' }}>
           <AntDesign name="pluscircle" size={50} color="black" />
           {/* <SimpleLineIcons name="plus" size={50} color="white" style={{backgroundColor: 'black', borderRadius: '100%'}} /> */}
         </TouchableOpacity>
@@ -467,8 +481,9 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#1a1a1a',
+    paddingBottom: 20,
+    paddingTop: 50,
     paddingHorizontal: 20,
-    paddingVertical: 20,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
   },
@@ -641,6 +656,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     flex: 1,
     paddingHorizontal: 24,
+    // paddingBottom: 240,
   },
   propertyCard: {
     backgroundColor: '#fff',

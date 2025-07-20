@@ -4,6 +4,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BedIcon from 'components/Icons/BedIcon';
 import LocationIcon from 'components/Icons/LocationIcon';
 import ToiletIcon from 'components/Icons/ToiletIcon';
+import { AgentRootStackParamList } from 'components/User/types/navigation';
 import React, { useState } from 'react';
 import {
   View,
@@ -20,28 +21,36 @@ import {
 } from 'react-native';
 import { useAppStore } from 'stores/useAppStore';
 
-import { RootStackParamList } from '../types/navigation';
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type PropertyDetailsNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'PropertyDetails'
+  AgentRootStackParamList,
+  'ViewProperty'
 >;
-type PropertyDetailsRouteProp = RouteProp<RootStackParamList, 'PropertyDetails'>;
+type PropertyDetailsRouteProp = RouteProp<AgentRootStackParamList, 'ViewProperty'>;
 
 interface PropertyDetailsScreenProps {
   navigation: PropertyDetailsNavigationProp;
   route: PropertyDetailsRouteProp;
 }
 
-const PropertyDetailsScreen: React.FC = () => {
+const ViewProperty: React.FC = () => {
   const navigation = useNavigation<PropertyDetailsNavigationProp>();
   const route = useRoute<PropertyDetailsRouteProp>();
-  const { propertyId, propertyName, location, bedrooms, bathrooms, price, imageSource, images } =
-    route.params;
+//   const { propertyId, propertyName, location, bedrooms, bathrooms, price, imageSource, images } =
+//     route.params;
 
-    // 678b83
+const propertyId = '1'
+const propertyName = 'Property Name';
+const location = '221B Baker Str';
+const bedrooms = '10';
+const bathrooms = '12';
+const price = 123000065;
+const imageSource = '1';
+const images = ['1'];
+
 
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
@@ -52,7 +61,7 @@ const PropertyDetailsScreen: React.FC = () => {
   };
 
   const handleContactAgent = (): void => {
-    navigation.navigate('ContactOwner', { propertyId, propertyName });
+    // navigation.navigate('ContactOwner', { propertyId, propertyName });
   };
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>): void => {
@@ -118,19 +127,19 @@ const PropertyDetailsScreen: React.FC = () => {
 
           {/* Location */}
           <View style={styles.locationRow}>
-            <LocationIcon color={themeColors.primaryColor} />
+            <LocationIcon color="#678b83" />
             <Text style={styles.locationText}>{location}</Text>
           </View>
 
           {/* Property Details */}
           <View style={styles.detailsRow}>
             <View style={styles.detail}>
-              <BedIcon color={themeColors.primaryColor} />
+              <BedIcon color="#678b83" />
               <Text style={styles.detailText}>{bedrooms} Bedrooms</Text>
             </View>
 
             <View style={styles.detail}>
-              <ToiletIcon color={themeColors.primaryColor} />
+              <ToiletIcon color="#678b83" />
               <Text style={styles.detailText}>{bathrooms} Bathrooms</Text>
             </View>
           </View>
@@ -174,7 +183,7 @@ const PropertyDetailsScreen: React.FC = () => {
         <TouchableOpacity
           style={[styles.contactButton, { backgroundColor: themeColors.primaryColor }]}
           onPress={handleContactAgent}>
-          <Text style={styles.contactButtonText}>Contact Agent</Text>
+          <Text style={styles.contactButtonText}>Edit Listing</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -191,9 +200,9 @@ const styles = StyleSheet.create({
   },
   imageSection: {
     position: 'relative',
-    height: 300,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    height: 400,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
   imageCarousel: {
     height: 500,
@@ -202,7 +211,7 @@ const styles = StyleSheet.create({
   },
   carouselImage: {
     width: SCREEN_WIDTH,
-    height: 300,
+    height: 400,
     resizeMode: 'cover',
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
@@ -226,7 +235,7 @@ const styles = StyleSheet.create({
   },
   indicatorContainer: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 20,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -239,8 +248,8 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   activeIndicator: {
-    width: 20,
-    backgroundColor: '#6B9B76',
+    width: 40,
+    backgroundColor: '#000000',
   },
   inactiveIndicator: {
     width: 6,
@@ -259,20 +268,22 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '400',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 16,
     paddingHorizontal: 20,
+    fontFamily: 'Bahnschrift',
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 4,
+    marginBottom: 8,
+    gap: 8,
     paddingHorizontal: 20,
   },
   locationText: {
     fontSize: 13,
     color: '#666',
     flex: 1,
+    fontFamily: 'Bahnschrift',
   },
   detailsRow: {
     flexDirection: 'row',
@@ -288,7 +299,8 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 13,
     color: '#666',
-    fontWeight: '500',
+    // fontWeight: '500',
+    fontFamily: 'Bahnschrift',
   },
   section: {
     marginBottom: 24,
@@ -300,15 +312,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '400',
     color: '#333',
     marginBottom: 12,
+    fontFamily: 'Bahnschrift',
   },
   descriptionText: {
     fontSize: 14,
     color: '#333',
     lineHeight: 22,
     textAlign: 'justify',
+    fontFamily: 'Bahnschrift',
+    fontWeight: '300',
   },
   mapContainer: {
     borderRadius: 12,
@@ -330,7 +344,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 8,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#f0f0f0',
@@ -339,21 +353,26 @@ const styles = StyleSheet.create({
   },
   priceContainer: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   priceLabel: {
     fontSize: 12,
     color: '#666',
     marginBottom: 2,
+    fontFamily: 'Bahnschrift',
   },
   priceValue: {
     fontSize: 16,
     fontWeight: '700',
     color: '#333',
+    fontFamily: 'Bahnschrift',
   },
   contactButton: {
-    // backgroundColor: '#6B9B76',
+    // backgroundColor: '#000000',
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: 18,
     borderRadius: 8,
     minWidth: 140,
     alignItems: 'center',
@@ -362,7 +381,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#fff',
     fontWeight: '600',
+    fontFamily: 'Bahnschrift',
   },
 });
 
-export default PropertyDetailsScreen;
+export default ViewProperty;

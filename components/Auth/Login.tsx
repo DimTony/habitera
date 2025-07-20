@@ -95,6 +95,7 @@ const Login = () => {
         // // console.log('rrrrr', session);
         await AsyncStorage.setItem('session', JSON.stringify(session));
         setUser(session)
+        setUserType('agent')
         await SecureStore.setItemAsync('user_email', values.email);
         await SecureStore.setItemAsync('user_password', values.password);
         // setHasStoredCredentials(true);

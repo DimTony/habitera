@@ -1,5 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ChatFilledIcon from 'components/Icons/TabIcons/ChatFilledIcon';
 import ChatOutlineIcon from 'components/Icons/TabIcons/ChatOutlineIcon';
 import HomeFilledIcon from 'components/Icons/TabIcons/HomeFilledIcon';
@@ -8,129 +10,230 @@ import SettingsIconFilled from 'components/Icons/TabIcons/SettingsIconFilled';
 import SettingsIcon from 'components/Icons/TabIcons/SettingsIconOutline';
 import { View, StyleSheet, TouchableOpacity, Text, Dimensions } from 'react-native';
 import { useAppStore } from 'stores/useAppStore';
+
+// Tab Screens
 import AgentHomeScreen from './AgentHomeScreen';
 import AgentChatScreen from './AgentChatScreen';
 import AgentSettingsScreen from './AgentSettingsScreen';
-// import { useAppStore } from 'stores/useAppStore';
+import PropertyItem from './UI/PropertyItem';
+import AddProperty from './Screens/AddProperty';
+import ViewProperty from './Screens/ViewProperty';
 
-// import SettingsIconFilled from 'components/Icons/TabIcons/SettingsIconFilled';
-// import SettingsIcon from 'components/Icons/TabIcons/SettingsIconOutline';
-// import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-// import ChatFilledIcon from 'components/Icons/TabIcons/ChatFilledIcon';
-// import ChatOutlineIcon from 'components/Icons/TabIcons/ChatOutlineIcon';
-// import HomeFilledIcon from 'components/Icons/TabIcons/HomeFilledIcon';
-// import HomeOutlineIcon from 'components/Icons/TabIcons/HomeOutlineIcon';
+// Non-Tab Screens (Stack Screens)
+// import LoginScreen from './LoginScreen';
+// import OnboardingScreen from './OnboardingScreen';
+// import ProfileDetailScreen from './ProfileDetailScreen';
+// import ChatDetailScreen from './ChatDetailScreen';
+// import NotificationScreen from './NotificationScreen';
+// import EditProfileScreen from './EditProfileScreen';
 
-// import AgentChatScreen from './AgentChatScreen';
-// import AgentHomeScreen from './AgentHomeScreen';
-// import AgentSettingsScreen from './AgentSettingsScreen';
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
-const AgentApp = () => {
+// Tab Navigator Component
+const TabNavigator = () => {
   const { themeColors } = useAppStore();
-  const Tab = createBottomTabNavigator();
-  const windowWidth = Dimensions.get('window').width;
-  // const tabBarWidth = windowWidth * 0.9;
 
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          tabBarStyle: {
-            position: 'absolute',
-            bottom: 30,
-            left: '5%',
-            right: '5%',
-            elevation: 5,
-            backgroundColor: '#fff',
-            borderRadius: 15,
-            height: 60,
-            shadowColor: '#000',
-            shadowOffset: {
-              width: 0,
-              height: 1,
-            },
-            shadowOpacity: 0.1,
-            shadowRadius: 2,
-            borderTopWidth: 0,
-            width: '90%',
-            alignSelf: 'center',
-            paddingBottom: 6,
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarStyle: {
+          position: 'absolute',
+          bottom: 30,
+          left: '5%',
+          right: '5%',
+          elevation: 5,
+          backgroundColor: '#fff',
+          borderRadius: 15,
+          height: 60,
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: 1,
           },
-          tabBarIcon: ({ focused }) => {
-            const iconSize = 20;
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          borderTopWidth: 0,
+          width: '90%',
+          alignSelf: 'center',
+          paddingBottom: 6,
+        },
+        tabBarIcon: ({ focused }) => {
+          const iconSize = 20;
 
-            if (route.name === 'Home') {
-              return focused ? (
-                <HomeFilledIcon width={iconSize} height={iconSize} />
-              ) : (
-                <HomeOutlineIcon width={iconSize} height={iconSize} />
-              );
-            } else if (route.name === 'Chat') {
-              return focused ? (
-                <ChatFilledIcon width={iconSize} height={iconSize} />
-              ) : (
-                <ChatOutlineIcon width={iconSize} height={iconSize} />
-              );
-            } else if (route.name === 'Settings') {
-              return focused ? (
-                <SettingsIconFilled width={iconSize} height={iconSize} />
-              ) : (
-                <SettingsIcon width={iconSize} height={iconSize} />
-              );
-            }
-            return null;
-          },
-          tabBarShowLabel: true,
-          tabBarActiveTintColor: themeColors?.primaryColor || '#678B83',
-          tabBarInactiveTintColor: '#404040',
-          tabBarLabelStyle: {
-            fontSize: 10,
-            fontWeight: '500',
-            marginTop: 0,
-            paddingTop: 0,
-          },
-          tabBarIconStyle: {
-            marginBottom: 0,
-            paddingBottom: 0,
-          },
-          tabBarItemStyle: {
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingTop: 10,
-            height: '100%',
-            // Set a fixed width for each tab to ensure proper spacing
-            minWidth: 60, // Minimum width for each tab
-            paddingHorizontal: 15,
-            // width: tabBarWidth / 5,
-          },
-          
-        })}
-        // Use a custom tab bar to ensure proper spacing
-        tabBar={(props) => <CustomTabBar {...props} />}>
-        {/* tabBar={(props) => <CustomTabBar {...props} tabBarWidth={tabBarWidth} />}> */}
-        <Tab.Screen name="Home" component={AgentHomeScreen} />
-        {/* <Tab.Screen name="Bookmark" component={UserBookmarkScreen} /> */}
-        {/* <Tab.Screen
-          name="Search"
-          component={UserSearchScreen}
+          if (route.name === 'Home') {
+            return focused ? (
+              <HomeFilledIcon width={iconSize} height={iconSize} />
+            ) : (
+              <HomeOutlineIcon width={iconSize} height={iconSize} />
+            );
+          } else if (route.name === 'Chat') {
+            return focused ? (
+              <ChatFilledIcon width={iconSize} height={iconSize} />
+            ) : (
+              <ChatOutlineIcon width={iconSize} height={iconSize} />
+            );
+          } else if (route.name === 'Settings') {
+            return focused ? (
+              <SettingsIconFilled width={iconSize} height={iconSize} />
+            ) : (
+              <SettingsIcon width={iconSize} height={iconSize} />
+            );
+          }
+          return null;
+        },
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: themeColors?.primaryColor || '#678B83',
+        tabBarInactiveTintColor: '#404040',
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '500',
+          marginTop: 0,
+          paddingTop: 0,
+        },
+        tabBarIconStyle: {
+          marginBottom: 0,
+          paddingBottom: 0,
+        },
+        tabBarItemStyle: {
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingTop: 10,
+          height: '100%',
+          minWidth: 60,
+          paddingHorizontal: 15,
+        },
+      })}
+      tabBar={(props) => <CustomTabBar {...props} />}>
+      <Tab.Screen name="Home" component={AgentHomeScreen} />
+      <Tab.Screen name="Chat" component={AgentChatScreen} />
+      <Tab.Screen name="Settings" component={AgentSettingsScreen} />
+    </Tab.Navigator>
+  );
+};
+
+// Main App Component with Stack Navigator
+const AgentApp = () => {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false, // Hide headers by default
+          animation: 'slide_from_right', // Default animation
+        }}>
+        {/* <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
           options={{
-            tabBarButton: (props) => <CustomTabBarButton {...props} />,
+            headerShown: false,
+            gestureEnabled: false,
           }}
         /> */}
-        <Tab.Screen name="Chat" component={AgentChatScreen} />
-        <Tab.Screen name="Settings" component={AgentSettingsScreen} />
-      </Tab.Navigator>
+
+        {/* Main Tab Navigator */}
+        <Stack.Screen
+          name="MainTabs"
+          component={TabNavigator}
+          options={{
+            headerShown: false,
+          }}
+        />
+
+        {/* Detail/Modal Screens */}
+        {/* <Stack.Screen
+          name="ProfileDetail"
+          component={ProfileDetailScreen}
+          options={{
+            headerShown: true,
+            title: 'Profile Details',
+            presentation: 'modal', // Presents as modal on iOS
+          }}
+        /> */}
+
+        {/* <Stack.Screen
+          name="ChatDetail"
+          component={ChatDetailScreen}
+          options={({ route }) => ({
+            headerShown: true,
+            title: route.params?.chatName || 'Chat',
+            headerBackTitleVisible: false,
+          })}
+        />
+
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileScreen}
+          options={{
+            headerShown: true,
+            title: 'Edit Profile',
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+
+        <Stack.Screen
+          name="Notifications"
+          component={NotificationScreen}
+          options={{
+            headerShown: true,
+            title: 'Notifications',
+          }}
+        /> */}
+
+        {/* Auth Screens */}
+        <Stack.Screen
+          name="AddProperty"
+          component={AddProperty}
+          options={{
+            headerShown: false,
+            gestureEnabled: false, // Disable swipe back on login
+          }}
+        />
+
+        <Stack.Screen
+          name="ViewProperty"
+          component={ViewProperty}
+          options={{
+            headerShown: false,
+            gestureEnabled: true, // Disable swipe back on login
+          }}
+        />
+
+        {/* Add more stack screens as needed */}
+      </Stack.Navigator>
     </NavigationContainer>
   );
 };
 
-// Custom tab bar component to ensure proper spacing
-const CustomTabBar = ({ state, descriptors, navigation, tabBarWidth }: any) => {
+// Custom tab bar component with safe area support
+const CustomTabBar = ({ state, descriptors, navigation }: any) => {
+  const insets = useSafeAreaInsets();
+  const windowWidth = Dimensions.get('window').width;
+
+  // Calculate safe tab bar width (ensure it doesn't exceed screen bounds)
+  const maxTabBarWidth = windowWidth - 40; // 20px margin on each side
+  const preferredWidth = windowWidth * 0.7; // 70% of screen width
+  const tabBarWidth = Math.min(preferredWidth, maxTabBarWidth);
+
   return (
-    <View style={styles.tabBarContainer}>
-      <View style={styles.tabBar}>
+    <View
+      style={[
+        styles.tabBarContainer,
+        {
+          bottom: Math.max(insets.bottom + 10, 30), // Respect safe area bottom
+          paddingHorizontal: Math.max(insets.left, insets.right, 20), // Respect side safe areas
+        },
+      ]}>
+      <View
+        style={[
+          styles.tabBar,
+          {
+            width: tabBarWidth,
+            maxWidth: maxTabBarWidth,
+          },
+        ]}>
         {state.routes.map((route: any, index: any) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
@@ -147,10 +250,10 @@ const CustomTabBar = ({ state, descriptors, navigation, tabBarWidth }: any) => {
             }
           };
 
-          // Use the custom tab bar button for Search tab
+          // Handle special Search tab if it exists
           if (route.name === 'Search') {
             return (
-              <View key={route.key} style={[styles.tabItem, { width: tabBarWidth / 5 }]}>
+              <View key={route.key} style={[styles.tabItem, { flex: 1 }]}>
                 {options.tabBarButton
                   ? options.tabBarButton({
                       accessibilityState: { selected: isFocused },
@@ -161,14 +264,14 @@ const CustomTabBar = ({ state, descriptors, navigation, tabBarWidth }: any) => {
             );
           }
 
-          // Regular tab items
+          // Regular tab items with flexible width
           return (
             <TouchableOpacity
               key={route.key}
               accessibilityRole="button"
               accessibilityState={{ selected: isFocused }}
               onPress={onPress}
-              style={[styles.tabItem, { width: tabBarWidth / 5 }]}>
+              style={[styles.tabItem, { flex: 1 }]}>
               {options.tabBarIcon ? options.tabBarIcon({ focused: isFocused }) : null}
               <Text
                 style={[
@@ -178,7 +281,9 @@ const CustomTabBar = ({ state, descriptors, navigation, tabBarWidth }: any) => {
                       ? descriptors[route.key].options.tabBarActiveTintColor
                       : descriptors[route.key].options.tabBarInactiveTintColor,
                   },
-                ]}>
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit>
                 {route.name}
               </Text>
             </TouchableOpacity>
@@ -192,17 +297,12 @@ const CustomTabBar = ({ state, descriptors, navigation, tabBarWidth }: any) => {
 const styles = StyleSheet.create({
   tabBarContainer: {
     position: 'absolute',
-    bottom: 30,
     left: 0,
-    // paddingBottom: 30,
+    right: 0,
     backgroundColor: 'transparent',
-    width: '100%',
-    alignItems: 'center', // Center the tab bar horizontally
+    alignItems: 'center',
   },
   tabBar: {
-    // position: 'absolute',
-    // bottom: 30,
-    // left: '5%',
     elevation: 5,
     backgroundColor: '#fff',
     borderRadius: 20,
@@ -215,24 +315,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     flexDirection: 'row',
-    alignSelf: 'center',
-    paddingHorizontal: 30,
-    width: '70%',
-    display: 'flex',
-    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    minWidth: 200,
   },
   tabItem: {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    // paddingTop: 10,
     height: '100%',
-    // backgroundColor: 'red',
+    paddingHorizontal: 8,
   },
   tabLabel: {
     fontSize: 10,
     fontWeight: '500',
     marginTop: 2,
+    textAlign: 'center',
   },
   customButtonContainer: {
     alignItems: 'center',
