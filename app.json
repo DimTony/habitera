@@ -9,7 +9,14 @@
     "experiments": {
       "tsconfigPaths": true
     },
-    "plugins": [],
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "This app needs access to your location to show nearby properties."
+        }
+      ]
+    ],
     "orientation": "portrait",
     "icon": "./assets/images/splash-full.png",
     "userInterfaceStyle": "light",

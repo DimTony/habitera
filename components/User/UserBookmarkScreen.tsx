@@ -1,18 +1,31 @@
-import { StatusBar } from 'expo-status-bar';
-import { View, Text } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+
+import PropertyCard from './Shared/PropertyCard';
+import TabsLayout from './TabsLayout';
 
 const UserBookmarkScreen = () => {
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#f9d4b1',
-      }}>
-      <StatusBar style="auto" backgroundColor="#f9d4b1" />
-      <Text>UserBookmarkScreen</Text>
-    </View>
+    <TabsLayout tabName="Bookmarks">
+      <ScrollView className="flex-1 gap-3 px-5 pb-28">
+        <PropertyCard
+          propertyName="Clement Properties"
+          location="19, Adeniran Ogunsanya Street, Surulere, Lagos"
+          bedrooms={2}
+          bathrooms={2}
+          price={1200000}
+          priceUnit="Year"
+          currency="₦"
+          imageSource={require('../../assets/images/onboarding-1.png')}
+          isBookmarked
+          onBookmarkPress={() => console.log('Bookmark pressed')}
+          onCardPress={() => console.log('Card pressed')}
+          customStyles={{
+            container: { marginVertical: 8 },
+            // priceText: { fontWeight: 'bold' },
+          }}
+        />
+      </ScrollView>
+    </TabsLayout>
   );
 };
 
