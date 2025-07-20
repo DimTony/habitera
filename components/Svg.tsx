@@ -535,4 +535,174 @@ export const CalendarIcon: React.FC<SvgProps> = (props) => (
   </Svg>
 );
 
+export const UserIcon: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={32}
+    height={32}
+    viewBox="0 0 24 24"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path
+      d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
+      stroke="black"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"
+      stroke="black"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+export const BellIcon: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={24}
+    height={25}
+    viewBox="0 0 24 25"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path
+      d="M18.0093 8.65576C18.0093 7.06446 17.3771 5.53834 16.2519 4.41312C15.1267 3.2879 13.6006 2.65576 12.0093 2.65576C10.418 2.65576 8.89186 3.2879 7.76664 4.41312C6.64142 5.53834 6.00928 7.06446 6.00928 8.65576C6.00928 15.6558 3.00928 17.6558 3.00928 17.6558H21.0093C21.0093 17.6558 18.0093 15.6558 18.0093 8.65576Z"
+      stroke="black"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M13.7393 21.6558C13.5635 21.9588 13.3111 22.2104 13.0075 22.3853C12.7039 22.5602 12.3597 22.6522 12.0093 22.6522C11.6589 22.6522 11.3147 22.5602 11.0111 22.3853C10.7075 22.2104 10.4551 21.9588 10.2793 21.6558"
+      stroke="black"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+export const LockIcon: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={25}
+    height={25}
+    viewBox="0 0 25 25"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path
+      d="M19.5762 11.9658H5.57617C4.4716 11.9658 3.57617 12.8613 3.57617 13.9658V20.9658C3.57617 22.0704 4.4716 22.9658 5.57617 22.9658H19.5762C20.6807 22.9658 21.5762 22.0704 21.5762 20.9658V13.9658C21.5762 12.8613 20.6807 11.9658 19.5762 11.9658Z"
+      stroke="black"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M7.57617 11.9658V7.96582C7.57617 6.63974 8.10296 5.36797 9.04064 4.43029C9.97832 3.4926 11.2501 2.96582 12.5762 2.96582C13.9023 2.96582 15.174 3.4926 16.1117 4.43029C17.0494 5.36797 17.5762 6.63974 17.5762 7.96582V11.9658"
+      stroke="black"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+export const InfoIcon: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={25}
+    height={25}
+    viewBox="0 0 25 25"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path
+      d="M12.624 22.6826C18.1469 22.6826 22.624 18.2055 22.624 12.6826C22.624 7.15977 18.1469 2.68262 12.624 2.68262C7.10118 2.68262 2.62402 7.15977 2.62402 12.6826C2.62402 18.2055 7.10118 22.6826 12.624 22.6826Z"
+      stroke="black"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12.624 16.6826V12.6826"
+      stroke="black"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12.624 8.68262H12.634"
+      stroke="black"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+export const HeadphoneIcon: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={25}
+    height={25}
+    viewBox="0 0 25 25"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path
+      d="M3.62402 18.6826V12.6826C3.62402 10.2957 4.57223 8.00648 6.26006 6.31866C7.94789 4.63083 10.2371 3.68262 12.624 3.68262C15.011 3.68262 17.3002 4.63083 18.988 6.31866C20.6758 8.00648 21.624 10.2957 21.624 12.6826V18.6826"
+      stroke="black"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M21.624 19.6826C21.624 20.2131 21.4133 20.7218 21.0382 21.0968C20.6632 21.4719 20.1545 21.6826 19.624 21.6826H18.624C18.0936 21.6826 17.5849 21.4719 17.2098 21.0968C16.8347 20.7218 16.624 20.2131 16.624 19.6826V16.6826C16.624 16.1522 16.8347 15.6435 17.2098 15.2684C17.5849 14.8933 18.0936 14.6826 18.624 14.6826H21.624V19.6826ZM3.62402 19.6826C3.62402 20.2131 3.83474 20.7218 4.20981 21.0968C4.58488 21.4719 5.09359 21.6826 5.62402 21.6826H6.62402C7.15446 21.6826 7.66316 21.4719 8.03824 21.0968C8.41331 20.7218 8.62402 20.2131 8.62402 19.6826V16.6826C8.62402 16.1522 8.41331 15.6435 8.03824 15.2684C7.66316 14.8933 7.15446 14.6826 6.62402 14.6826H3.62402V19.6826Z"
+      stroke="black"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+export const LogoutIcon: React.FC<SvgProps> = (props) => (
+  <Svg
+    width={24}
+    height={24}
+    viewBox="0 0 24 24"
+    fill="none"
+    //@ts-ignore
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}>
+    <Path
+      d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"
+      stroke="#FF2C2C"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M16 17L21 12L16 7"
+      stroke="#FF2C2C"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M21 12H9"
+      stroke="#FF2C2C"
+      strokeWidth={0.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 // export default SVGComponent;

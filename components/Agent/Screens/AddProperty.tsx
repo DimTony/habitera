@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#1a1a1a',
     paddingBottom: 30,
-    paddingTop: 60,
+    paddingTop: 80,
     paddingHorizontal: 20,
   },
   profileSection: {
@@ -543,6 +543,11 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: 0,
+    backgroundColor: 'transparent',
+    width: 25,
+    height: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     color: 'white',

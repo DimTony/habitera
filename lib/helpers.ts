@@ -38,3 +38,14 @@ export const getInitials = (name: string) => {
   const initials = names?.[0]?.[0] + (names?.[1] ? names?.[1]?.[0] : '');
   return initials.toUpperCase();
 };
+
+export const formatUTCTo12Hour = (utcTime: string): string => {
+  const date = new Date(utcTime);
+  const options: Intl.DateTimeFormatOptions = {
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: true,
+    timeZone: 'UTC', // ensure UTC context
+  };
+  return new Intl.DateTimeFormat('en-US', options).format(date);
+};

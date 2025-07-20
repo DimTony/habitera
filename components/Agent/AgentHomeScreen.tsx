@@ -34,7 +34,7 @@ import PropertyItem from './UI/PropertyItem';
 import { useRouter } from 'expo-router';
 import { AgentRootStackParamList } from 'components/User/types/navigation';
 
-const FLOATING_BUTTON_SPACE = 130;
+export const FLOATING_BUTTON_SPACE = 130;
 type HomeScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'MainTabs'>;
 
 // No Properties Content (when no listings exist)
@@ -406,7 +406,7 @@ const AgentHomeScreen = () => {
                   </View>
                 </View>
                 <TouchableOpacity
-                  onPress={() => resetState()}
+                  onPress={() => navigation.navigate('Notifications')}
                   style={{
                     backgroundColor: '#fff',
                     justifyContent: 'center',
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#1a1a1a',
     paddingBottom: 20,
-    paddingTop: 50,
+    paddingTop: 80,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,

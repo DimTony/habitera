@@ -64,6 +64,21 @@ export type AgentTabParamList = {
 
 export type AgentRootStackParamList = {
   MainTabs: NavigatorScreenParams<AgentTabParamList>;
+  ViewProperty: {
+    propertyId: string;
+  };
+  Chat: {
+    chatId: string;
+  };
+  AgentChat: undefined;
+  AddProperty: undefined;
+  Notifications: undefined;
+  Profile: undefined;
+  AlertSettings: undefined;
+  AboutUs: undefined;
+  ChangePassword: undefined;
+  CustomerSupport: undefined;
+
   // PropertyDetails: {
   //   propertyId: string;
   //   propertyName: string;
@@ -85,9 +100,7 @@ export type AgentRootStackParamList = {
   //     isVerified: boolean;
   //   };
   // };
-  ViewProperty: {
-    propertyId: string;
-  };
+
   // PropertyImageGallery: {
   //   propertyId: string;
   //   images: any[];
@@ -106,8 +119,6 @@ export type AgentRootStackParamList = {
   // };
   // FilterModal: undefined;
   // ChangePassword: undefined;
-  AgentChat: undefined;
-  AddProperty: undefined;
 };
 
 // Screen Props Types
