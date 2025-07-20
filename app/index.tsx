@@ -144,7 +144,7 @@ const LandingScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      {/* <StatusBar style="light" /> */}
 
       {/* Skip button */}
       {currentImageIndex < 3 && (
