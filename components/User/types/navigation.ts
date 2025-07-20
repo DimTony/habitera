@@ -70,8 +70,12 @@ export type AgentRootStackParamList = {
   Chat: {
     chatId: string;
   };
+  AgentHome: undefined;
   AgentChat: undefined;
+  AgentSettings: undefined;
   AddProperty: undefined;
+  AddAlert: undefined;
+  EditAlert: undefined;
   Notifications: undefined;
   Profile: undefined;
   AlertSettings: undefined;

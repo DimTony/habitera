@@ -387,15 +387,21 @@ const AgentHomeScreen = () => {
                     flexDirection: 'row',
                   }}>
                   {user?.pix ? (
-                    <Image source={{ uri: user.pix }} style={styles.questionImage} />
+                    <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                      <Image source={{ uri: user.pix }} style={styles.questionImage} />
+                    </TouchableOpacity>
                   ) : (
-                    <LinearGradient
-                      colors={gradientColors}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.questionImage}>
-                      <ThemedText style={styles.initialsText}>{getInitials(user.name)}</ThemedText>
-                    </LinearGradient>
+                    <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                      <LinearGradient
+                        colors={gradientColors}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.questionImage}>
+                        <ThemedText style={styles.initialsText}>
+                          {getInitials(user.name)}
+                        </ThemedText>
+                      </LinearGradient>
+                    </TouchableOpacity>
                   )}
                   <View
                     style={{
@@ -423,14 +429,14 @@ const AgentHomeScreen = () => {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <MailIcon />
                   <Text style={styles.contactText}>ajiriogheneokpeva@gmail.com</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
                     <Edit />
                   </TouchableOpacity>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <PhoneIncoming />
                   <Text style={styles.contactText}>08033088819</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
                     <Edit />
                   </TouchableOpacity>
                 </View>

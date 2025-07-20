@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import {
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   Text,
@@ -16,6 +17,7 @@ import { AgentRootStackParamList } from 'components/User/types/navigation';
 import { StyleSheet } from 'react-native';
 import { Image } from 'react-native';
 import EditIcon from 'components/Icons/EditIcon';
+import LottieView from 'lottie-react-native';
 
 type ScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'Profile'>;
 
@@ -29,6 +31,7 @@ interface FormData {
 
 const Profile = () => {
   const navigation = useNavigation<ScreenNavigationProp>();
+      const [showSavedModal, setShowSavedModal] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
@@ -36,6 +39,13 @@ const Profile = () => {
     phone: '',
     location: [],
   });
+
+  const handleSaveChanges = () => setShowSavedModal(true);
+
+  const handleCloseModal = () => {
+    setShowSavedModal(false);
+    navigation.popTo('AgentSettings');
+  };
 
   return (
     <KeyboardAvoidingView
@@ -148,10 +158,35 @@ const Profile = () => {
       </ScrollView>
 
       <View style={styles.bottomButtonContainer}>
-        <TouchableOpacity style={styles.submitButton} onPress={() => {}}>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSaveChanges}>
           <Text style={styles.submitButtonText}>Save Changes</Text>
         </TouchableOpacity>
       </View>
+
+        <Modal
+              visible={showSavedModal}
+              transparent={true}
+              animationType="fade"
+              onRequestClose={handleCloseModal}>
+              <View style={styles.addModalOverlay}>
+                <View style={styles.modalContent}>
+                  <View style={styles.iconContainer}>
+                    <LottieView
+                      source={require('../../../assets/animations/Save.json')}
+                      autoPlay
+                      loop
+                      style={styles.lottieAnimation}
+                    />
+                  </View>
+                  <Text style={styles.addModalTitle}>Profile updated successfully</Text>
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity style={styles.cancelButton} onPress={handleCloseModal}>
+                      <Text style={styles.cancelButtonText}>Close</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -262,6 +297,66 @@ const styles = StyleSheet.create({
     fontFamily: 'Bahnschrift',
     fontSize: 16,
     fontWeight: '500',
+  },
+  addModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 280,
+  },
+  iconContainer: {
+    // marginBottom: 20,
+  },
+  lottieAnimation: {
+    width: 100,
+    height: 100,
+  },
+  addModalTitle: {
+    fontSize: 14,
+    fontFamily: 'Bahnschrift',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  buttonContainer: {
+    width: '100%',
+    gap: 12,
+  },
+  logoutButton: {
+    backgroundColor: '#F93030',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Bahnschrift',
+    fontWeight: '600',
+  },
+  cancelButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#333',
+    fontSize: 14,
+    fontFamily: 'Bahnschrift',
   },
 });
 

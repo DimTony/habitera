@@ -25,6 +25,8 @@ import AlertSettings from './Screens/AlertSettings';
 import ChangePassword from './Screens/ChangePassword';
 import AboutUs from './Screens/AboutUs';
 import CustomerSupport from './Screens/CustomerSupport';
+import AddAlert from './Screens/AddAlert';
+import EditAlert from './Screens/EditAlert';
 
 // Non-Tab Screens (Stack Screens)
 // import LoginScreen from './LoginScreen';
@@ -191,6 +193,33 @@ const AgentApp = () => {
 
         {/* Auth Screens */}
         <Stack.Screen
+          name="AgentHome"
+          component={AgentHomeScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: false, // Disable swipe back on login
+          }}
+        />
+
+        <Stack.Screen
+          name="AgentChat"
+          component={AgentChatScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: false, // Disable swipe back on login
+          }}
+        />
+
+        <Stack.Screen
+          name="AgentSettings"
+          component={AgentSettingsScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: false, // Disable swipe back on login
+          }}
+        />
+
+        <Stack.Screen
           name="AddProperty"
           component={AddProperty}
           options={{
@@ -265,6 +294,24 @@ const AgentApp = () => {
         <Stack.Screen
           name="CustomerSupport"
           component={CustomerSupport}
+          options={{
+            headerShown: false,
+            gestureEnabled: true, // Disable swipe back on login
+          }}
+        />
+
+        <Stack.Screen
+          name="AddAlert"
+          component={AddAlert}
+          options={{
+            headerShown: false,
+            gestureEnabled: true, // Disable swipe back on login
+          }}
+        />
+
+        <Stack.Screen
+          name="EditAlert"
+          component={EditAlert}
           options={{
             headerShown: false,
             gestureEnabled: true, // Disable swipe back on login
