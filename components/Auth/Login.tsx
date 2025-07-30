@@ -36,7 +36,7 @@ const LoginSchema = Yup.object().shape({
   password: Yup.string().required('Password is required'),
 });
 
-const DEV_EMAIL = 'bolaji.agbede@theaccesscorporation.com';
+const DEV_EMAIL = 'bolaji.agbede@example.com';
 const DEV_PASSWORD = 'retreat2025';
 
 const Login = () => {
