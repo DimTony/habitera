@@ -1,4 +1,4 @@
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AgentApp from 'components/Agent/AgentApp';
 import AuthNavigator from 'components/Navigation/AuthNavigator';
 import UserApp from 'components/User/UserApp';
@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAppStore } from '../stores/useAppStore';
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
 
 const MainApp = () => {
   const { isAuthenticated, userType, resetState } = useAppStore();
