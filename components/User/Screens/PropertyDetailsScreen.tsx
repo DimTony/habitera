@@ -18,7 +18,7 @@ import {
   NativeScrollEvent,
   ImageSourcePropType,
 } from 'react-native';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 
 import { RootStackParamList } from '../types/navigation';
 
@@ -45,7 +45,7 @@ const PropertyDetailsScreen: React.FC = () => {
 
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
-  const { themeColors } = useAppStore();
+    const { themeColors } = useUnifiedStore();
 
   const formatPrice = (price: number): string => {
     return `₦${price.toLocaleString()}/Year`;

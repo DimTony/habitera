@@ -1,21 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useAppStore } from 'stores/useAppStore';
+import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
+import LottieView from 'lottie-react-native';
+import React, { useState } from 'react';
 
 import TabsLayout from './TabsLayout';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types/navigation';
 import { useNavigation } from '@react-navigation/native';
-import { useToastStore } from 'stores/useToastStore';
 
 const UserSettingsScreen = () => {
   type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'MainTabs'>;
   const navigation = useNavigation<SettingsScreenNavigationProp>();
 
-  const { resetState } = useAppStore();
-  const { showToast } = useToastStore();
+  const { resetState, showToast } = useUnifiedStore();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const settingsItems = [
+  const handleLogoutPress = () => setShowLogoutModal(true);
+  const handleConfirmLogout = () => {
+    setShowLogoutModal(false);
+    resetState();
+  };
+  const handleCancelLogout = () => setShowLogoutModal(false);
+    const settingsItems = [
     {
       id: 1,
       title: 'My Profile',
@@ -79,7 +86,7 @@ const UserSettingsScreen = () => {
   const LogOutItem = () => (
     <TouchableOpacity
       style={[styles.settingsItem, styles.logoutItem]}
-      onPress={resetState}
+      onPress={handleLogoutPress}
       activeOpacity={0.7}>
       <View style={styles.settingsItemLeft}>
         <View style={styles.iconContainer}>
@@ -102,6 +109,35 @@ const UserSettingsScreen = () => {
       <View style={[styles.settingsContainer, styles.logoutContainer]}>
         <LogOutItem />
       </View>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        visible={showLogoutModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCancelLogout}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.iconContainer}>
+              <LottieView
+                source={require('../../assets/animations/Log out.json')}
+                autoPlay
+                loop
+                style={styles.lottieAnimation}
+              />
+            </View>
+            <Text style={styles.modalTitle}>Are you sure you want to log out?</Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.logoutButton} onPress={handleConfirmLogout}>
+                <Text style={styles.logoutButtonText}>Yes, Log Out</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.cancelButton} onPress={handleCancelLogout}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </TabsLayout>
   );
 };
@@ -187,6 +223,64 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: '#ff4757',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 280,
+  },
+  lottieAnimation: {
+    width: 80,
+    height: 80,
+  },
+  modalTitle: {
+    fontSize: 14,
+    fontFamily: 'Bahnschrift',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  buttonContainer: {
+    width: '100%',
+    gap: 12,
+  },
+  logoutButton: {
+    backgroundColor: '#F93030',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Bahnschrift',
+    fontWeight: '600',
+  },
+  cancelButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#333',
+    fontSize: 14,
+    fontFamily: 'Bahnschrift',
   },
 });
 

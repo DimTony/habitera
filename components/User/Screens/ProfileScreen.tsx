@@ -1,19 +1,18 @@
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import TabsLayout from '../TabsLayout';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { useFormik } from 'formik';
 import EditableInput from '../Shared/EditableInput';
 import * as Yup from 'yup';
-import { useToastStore } from 'stores/useToastStore';
 
 type ProfileNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const ProfileScreen = () => {
-  const { themeColors } = useAppStore();
-  const { showToast } = useToastStore();
+  const { themeColors } = useUnifiedStore();
+  const { showToast } = useUnifiedStore();
   const navigation = useNavigation<ProfileNavigationProp>();
 
   const initialValues = {

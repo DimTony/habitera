@@ -1,17 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList } from 'components/Navigation/AuthNavigator';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '@/navigation/AppNavigator';
 import { StatusBar } from 'expo-status-bar';
 import { Formik } from 'formik';
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 // import { themeColors } from 'theme';
 import * as Yup from 'yup';
 
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'AgentSignup'>;
+type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'AgentSignup'>;
 
 const SignupSchema = Yup.object().shape({
   firstName: Yup.string()
@@ -38,7 +38,7 @@ const SignupSchema = Yup.object().shape({
 
 const AgentSignUp = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { setAuthenticated, userType, setUserType, themeColors } = useAppStore();
+  const { auth, setUser, setUserType, themeColors } = useUnifiedStore();
 
   // State for password visibility
   const [showPassword, setShowPassword] = useState(false);
@@ -270,13 +270,11 @@ const AgentSignUp = () => {
           </Formik>
 
           <View className="flex w-full flex-1 items-center justify-center gap-8 bg-white px-8 py-10">
-            <TouchableOpacity onPress={() => setUserType(userType === 'user' ? 'agent' : 'user')}>
-              {/* <View className="flex-row items-center justify-center gap-4">
-              <SwitchIcon />
-              <Text style={{ color: themeColors.primaryUser }}>
-                Switch to {userType === 'user' ? 'agent' : 'user'}
+            <TouchableOpacity
+              onPress={() => setUserType(auth.user?.userType === 'user' ? 'agent' : 'user')}>
+              <Text style={{ color: themeColors.primaryColor }}>
+                Switch to {auth.user?.userType === 'user' ? 'agent' : 'user'}
               </Text>
-            </View> */}
             </TouchableOpacity>
             <View className="flex-row items-center justify-center gap-2">
               <Text>Already have an account?</Text>

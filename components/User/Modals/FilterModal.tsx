@@ -11,7 +11,7 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 import { RootStackParamList } from '../types/navigation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -20,7 +20,7 @@ type FilterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 
 
 const FilterScreen: React.FC = () => {
   const navigation = useNavigation<FilterScreenNavigationProp>();
-  const { themeColors } = useAppStore();
+  const { themeColors } = useUnifiedStore();
 
   const [selectedCategory, setSelectedCategory] = useState<'rent' | 'sale'>('rent');
   const [selectedApartmentType, setSelectedApartmentType] = useState<string>('Storey');

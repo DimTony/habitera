@@ -1,14 +1,14 @@
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList } from 'components/Navigation/AuthNavigator';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '@/navigation/AppNavigator';
 import { StatusBar } from 'expo-status-bar';
 import { Formik } from 'formik';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 import * as Yup from 'yup';
 
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
+type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
 
 const LoginSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email').required('Email is required'),
@@ -16,7 +16,7 @@ const LoginSchema = Yup.object().shape({
 
 const ForgotPassword = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { themeColors } = useAppStore();
+  const { themeColors } = useUnifiedStore();
 
   const handleReset = (values: { email: string }) => {
     // Here you would normally call an API to authenticate the user

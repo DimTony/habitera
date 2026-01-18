@@ -149,7 +149,7 @@ const AlertSettings = () => {
         <TouchableOpacity
           onPress={() => navigation.navigate('AddAlert')}
           style={styles.floatingButton}>
-          <AntDesign name="pluscircle" size={50} color="black" />
+          <AntDesign name="plus-circle" size={50} color="black" />
         </TouchableOpacity>
       )}
 

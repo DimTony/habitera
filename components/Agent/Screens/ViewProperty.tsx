@@ -19,7 +19,7 @@ import {
   NativeScrollEvent,
   ImageSourcePropType,
 } from 'react-native';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 
 
 
@@ -54,7 +54,7 @@ const images = ['1'];
 
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
-  const { themeColors } = useAppStore();
+  const { themeColors } = useUnifiedStore();
 
   const formatPrice = (price: number): string => {
     return `₦${price.toLocaleString()}/Year`;

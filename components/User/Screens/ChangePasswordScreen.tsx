@@ -12,7 +12,7 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 import * as Yup from 'yup';
 
 import { RootStackParamList } from '../types/navigation';
@@ -44,7 +44,7 @@ const ChangePasswordSchema = Yup.object().shape({
 
 const ChangePasswordScreen: React.FC = () => {
   const navigation = useNavigation<ChangePasswordNavigationProp>();
-  const { themeColors } = useAppStore();
+  const { themeColors } = useUnifiedStore();
 
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);

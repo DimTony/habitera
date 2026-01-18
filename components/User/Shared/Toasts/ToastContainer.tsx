@@ -1,11 +1,11 @@
 // components/Toast/ToastContainer.tsx
 import React from 'react';
 import { View } from 'react-native';
-import { useToastStore } from 'stores/useToastStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 import ToastComponent from './ToastComponent';
 
 const ToastContainer: React.FC = () => {
-  const { toasts, hideToast } = useToastStore();
+  const { toasts, hideToast } = useUnifiedStore();
 
   if (toasts.length === 0) {
     return null;
@@ -13,9 +13,7 @@ const ToastContainer: React.FC = () => {
 
   return (
     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 9999 }}>
-      {toasts.map((toast: any, index: any) => (
-        <ToastComponent key={toast.id} toast={toast} onHide={hideToast} index={index} />
-      ))}
+      <ToastComponent />
     </View>
   );
 };

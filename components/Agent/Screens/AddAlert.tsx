@@ -21,7 +21,7 @@ import LottieView from 'lottie-react-native';
 import { ThemedText } from 'components/ThemedText';
 import { BackArrow, CaretDown, UploadIcon } from 'components/Svg';
 import LibraryDatePicker from '../UI/DatePicker';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 import { AgentRootStackParamList } from 'components/User/types/navigation';
 import { generateStableGradientPair } from 'lib/helpers';
 
@@ -264,7 +264,7 @@ const TabButton = React.memo(
 
 // Main Component
 const AddAlert = () => {
-  const { user } = useAppStore();
+  const { auth } = useUnifiedStore();
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [activeTab, setActiveTab] = useState<'For Rent' | 'For Sale'>('For Rent');
   const [showSuccessModal, setShowSuccessModal] = useState(false);

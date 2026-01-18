@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import LocationIcon from 'components/Icons/LocationIcon';
-import React from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,8 +12,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  ListRenderItem,
 } from 'react-native';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from 'stores/useUnifiedStore';
 
 import PropertyCard from './Shared/PropertyCard';
 import { properties, Property } from './Utils/constants';
@@ -21,15 +22,15 @@ import { RootStackParamList } from './types/navigation';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'MainTabs'>;
 
-const UserHomeScreen: React.FC = () => {
+const UserHomeScreen: React.FC = memo(() => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { themeColors } = useAppStore();
+  const { themeColors } = useUnifiedStore();
 
-  const handleFilterPress = (): void => {
+  const handleFilterPress = useCallback((): void => {
     navigation.navigate('FilterModal');
-  };
+  }, [navigation]);
 
-  const handlePropertyPress = (property: Property): void => {
+  const handlePropertyPress = useCallback((property: Property): void => {
     navigation.navigate('PropertyDetails', {
       propertyId: property.id,
       propertyName: property.propertyName,
@@ -40,15 +41,15 @@ const UserHomeScreen: React.FC = () => {
       imageSource: property.imageSource,
       images: property.images,
     });
-  };
+  }, [navigation]);
 
-  const handleBookmarkPress = (propertyId: string): void => {
+  const handleBookmarkPress = useCallback((propertyId: string): void => {
     console.log('Bookmark pressed for property:', propertyId);
     // Add your bookmark logic here - maybe update global state
     // Example: toggleBookmark(propertyId);
-  };
+  }, []);
 
-  const renderPropertyCard = ({ item }: { item: Property }) => (
+  const renderPropertyCard: ListRenderItem<Property> = useCallback(({ item }) => (
     <PropertyCard
       propertyName={item.propertyName}
       location={item.location}
@@ -65,7 +66,15 @@ const UserHomeScreen: React.FC = () => {
         container: { marginVertical: 8 },
       }}
     />
-  );
+  ), [handleBookmarkPress, handlePropertyPress]);
+
+  const keyExtractor = useCallback((item: Property) => item.id, []);
+
+  const getItemLayout = useCallback((data: Property[] | null | undefined, index: number) => ({
+    length: 120, // Approximate height of each item
+    offset: 120 * index,
+    index,
+  }), []);
 
   return (
     <View style={styles.container}>
@@ -116,14 +125,22 @@ const UserHomeScreen: React.FC = () => {
       {/* Property List */}
       <FlatList
         data={properties}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContainer}
         renderItem={renderPropertyCard}
         showsVerticalScrollIndicator={false}
+        getItemLayout={getItemLayout}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={5}
+        updateCellsBatchingPeriod={50}
       />
     </View>
   );
-};
+});
+
+UserHomeScreen.displayName = 'UserHomeScreen';
 
 export default UserHomeScreen;
 

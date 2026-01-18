@@ -13,7 +13,7 @@ import {
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -114,7 +114,7 @@ const mockProperties: Property[] = [
 const propertyTypes: (PropertyType | 'All')[] = ['All', 'Self-Contain', 'Mini-Flat', '2-Bedroom', '3-Bedroom'];
 
 const UserSearchScreen: React.FC = () => {
-  const { themeColors } = useAppStore();
+  const { themeColors } = useUnifiedStore();
   const mapRef = useRef<MapView>(null);
   
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -146,7 +146,7 @@ const UserSearchScreen: React.FC = () => {
   };
 
   // Fast center on user location with visual feedback
-  const centerOnUserLocation = async (): void => {
+  const centerOnUserLocation = async (): Promise<void> => {
     if (!locationPermission) {
       Alert.alert(
         'Location Permission Required',

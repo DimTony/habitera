@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from 'components/ThemedText';
 import { generateStableGradientPair, getInitials } from 'lib/helpers';
 import useSession from 'hooks/useSession';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 import {
   BathIcon,
   BedIcon,
@@ -27,11 +27,9 @@ import {
   TrashIcon,
 } from 'components/Svg';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AntDesign, SimpleLineIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import PropertyItem from './UI/PropertyItem';
-import { useRouter } from 'expo-router';
 import { AgentRootStackParamList } from 'components/User/types/navigation';
 
 export const FLOATING_BUTTON_SPACE = 130;
@@ -249,17 +247,15 @@ const InactiveListingsContent = ({ properties }: { properties: any }) => {
 };
 
 const AgentHomeScreen = () => {
-  const { user, resetState } = useAppStore();
-  const router = useRouter();
+  const { auth } = useUnifiedStore();
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const insets = useSafeAreaInsets();
   const [properties, setProperties] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<
     'Active Listings' | 'Under Review' | 'Inactive Listings'
   >('Active Listings');
 
   useEffect(() => {
-    console.log('sss', user);
+    console.log('sss', auth?.user);
     // Mock data for demonstration - replace with actual API call
     setProperties([
       {
@@ -312,7 +308,7 @@ const AgentHomeScreen = () => {
         status: 'active',
       },
     ]);
-  }, [user]);
+  }, [auth?.user]);
 
   const [fontsLoaded] = useFonts({
     Bahnschrift: require('../../assets/fonts/BAHNSCHRIFT.ttf'),
@@ -339,8 +335,8 @@ const AgentHomeScreen = () => {
   );
 
   const gradientColors = useMemo(() => {
-    return generateStableGradientPair(user?._id ?? user?.id ?? '');
-  }, [user?.id]);
+    return generateStableGradientPair(auth?.user?.id ?? auth?.user?.id ?? '');
+  }, [auth.user?.id]);
 
   // Function to render content based on active tab
   const renderTabContent = () => {
@@ -386,9 +382,9 @@ const AgentHomeScreen = () => {
                   style={{
                     flexDirection: 'row',
                   }}>
-                  {user?.pix ? (
+                  {auth?.user?.avatar ? (
                     <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-                      <Image source={{ uri: user.pix }} style={styles.questionImage} />
+                      <Image source={{ uri: auth?.user?.avatar }} style={styles.questionImage} />
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
@@ -398,7 +394,7 @@ const AgentHomeScreen = () => {
                         end={{ x: 1, y: 0 }}
                         style={styles.questionImage}>
                         <ThemedText style={styles.initialsText}>
-                          {getInitials(user.name)}
+                          {getInitials(auth?.user?.firstName ?? '')}
                         </ThemedText>
                       </LinearGradient>
                     </TouchableOpacity>
@@ -428,14 +424,14 @@ const AgentHomeScreen = () => {
               <View style={styles.contactInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <MailIcon />
-                  <Text style={styles.contactText}>ajiriogheneokpeva@gmail.com</Text>
+                  <Text style={styles.contactText}>{auth?.user?.email}</Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
                     <Edit />
                   </TouchableOpacity>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <PhoneIncoming />
-                  <Text style={styles.contactText}>08033088819</Text>
+                  <Text style={styles.contactText}>{auth?.user?.phoneNumber}</Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
                     <Edit />
                   </TouchableOpacity>
@@ -469,7 +465,7 @@ const AgentHomeScreen = () => {
         <TouchableOpacity
           onPress={() => navigation.navigate('AddProperty')}
           style={{ position: 'absolute', bottom: '15%', right: '6%' }}>
-          <AntDesign name="pluscircle" size={50} color="black" />
+          <AntDesign name="plus-circle" size={50} color="black" />
           {/* <SimpleLineIcons name="plus" size={50} color="white" style={{backgroundColor: 'black', borderRadius: '100%'}} /> */}
         </TouchableOpacity>
       </View>

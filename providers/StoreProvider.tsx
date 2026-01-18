@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { useAppStore } from '../stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 
 interface StoreProviderProps {
   children: React.ReactNode;
@@ -11,16 +11,16 @@ export const StoreProvider: React.FC<StoreProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // This effect will run once to check if the store is hydrated
-    const unsubscribe = useAppStore.persist.onHydrate(() => {
+    const unsubscribe = useUnifiedStore.persist.onHydrate(() => {
       setIsHydrated(false);
     });
 
-    const unsubFinish = useAppStore.persist.onFinishHydration(() => {
+    const unsubFinish = useUnifiedStore.persist.onFinishHydration(() => {
       setIsHydrated(true);
     });
 
     // If the store is already hydrated, set state to true
-    if (useAppStore.persist.hasHydrated()) {
+    if (useUnifiedStore.persist.hasHydrated()) {
       setIsHydrated(true);
     }
 

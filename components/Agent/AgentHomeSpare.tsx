@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from 'components/ThemedText';
 import { generateStableGradientPair, getInitials } from 'lib/helpers';
 import useSession from 'hooks/useSession';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 import { Edit, MailIcon, PhoneIncoming } from 'components/Svg';
 
 // No Properties Content (when no listings exist)
@@ -165,14 +165,14 @@ const InactiveListingsContent = ({ properties }: { properties: any }) => {
 };
 
 const AgentHomeScreen = () => {
-  const { user, resetState } = useAppStore();
+  const { auth } = useUnifiedStore();
   const [properties, setProperties] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<
     'Active Listings' | 'Under Review' | 'Inactive Listings'
   >('Active Listings');
 
   useEffect(() => {
-    console.log('sss', user);
+    console.log('sss', auth?.user);
     // Mock data for demonstration - replace with actual API call
     setProperties([
       {
@@ -225,7 +225,7 @@ const AgentHomeScreen = () => {
         status: 'active',
       },
     ]);
-  }, [user]);
+  }, [auth?.user]);
 
   const tabs = ['Active Listings', 'Under Review', 'Inactive Listings'];
 
@@ -247,8 +247,8 @@ const AgentHomeScreen = () => {
   );
 
   const gradientColors = useMemo(() => {
-    return generateStableGradientPair(user?._id ?? user?.id ?? '');
-  }, [user?.id]);
+    return generateStableGradientPair(auth?.user?.id ?? auth?.user?.id ?? '');
+  }, [auth?.user?.id]);
 
   // Function to render content based on active tab
   const renderTabContent = () => {
@@ -285,15 +285,15 @@ const AgentHomeScreen = () => {
                   style={{
                     flexDirection: 'row',
                   }}>
-                  {user?.pix ? (
-                    <Image source={{ uri: user.pix }} style={styles.questionImage} />
+                  {auth?.user?.avatar ? (
+                    <Image source={{ uri: auth?.user?.avatar }} style={styles.questionImage} />
                   ) : (
                     <LinearGradient
                       colors={gradientColors}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.questionImage}>
-                      <ThemedText style={styles.initialsText}>{getInitials(user.name)}</ThemedText>
+                      <ThemedText style={styles.initialsText}>{getInitials(auth?.user?.firstName ?? '')}</ThemedText>
                     </LinearGradient>
                   )}
                   <View
@@ -301,11 +301,11 @@ const AgentHomeScreen = () => {
                       flexDirection: 'column',
                     }}>
                     <Text style={{ fontFamily: 'Bahnschrift', color: '#fff' }}>Hello,</Text>
-                    <Text style={styles.userName}>Ajirioghene Okpeva</Text>
+                    <Text style={styles.userName}>{auth?.user?.firstName} {auth?.user?.lastName}</Text>
                   </View>
                 </View>
                 <TouchableOpacity
-                  onPress={() => resetState()}
+                  onPress={() => {}}
                   style={{
                     backgroundColor: '#fff',
                     justifyContent: 'center',
@@ -321,14 +321,14 @@ const AgentHomeScreen = () => {
               <View style={styles.contactInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <MailIcon />
-                  <Text style={styles.contactText}>ajiriogheneokpeva@gmail.com</Text>
+                  <Text style={styles.contactText}>{auth?.user?.email}</Text>
                   <TouchableOpacity>
                     <Edit />
                   </TouchableOpacity>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <PhoneIncoming />
-                  <Text style={styles.contactText}>08033088819</Text>
+                  <Text style={styles.contactText}>{auth?.user?.phoneNumber}</Text>
                   <TouchableOpacity>
                     <Edit />
                   </TouchableOpacity>

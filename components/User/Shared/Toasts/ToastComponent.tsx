@@ -1,4 +1,3 @@
-// components/Toast/ToastComponent.tsx
 import React, { useEffect, useRef } from 'react';
 import {
   View,
@@ -11,13 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Toast } from 'stores/useToastStore';
-
-interface ToastComponentProps {
-  toast: Toast;
-  onHide: (id: string) => void;
-  index: number;
-}
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 
 const { width } = Dimensions.get('window');
 const TOAST_HEIGHT = 50;
@@ -25,7 +18,16 @@ const TOAST_MARGIN = 8;
 const ICON_SIZE = 40;
 const FULL_WIDTH = width * 0.50; // Reduced width - 75% of screen
 
-const ToastComponent: React.FC<ToastComponentProps> = ({ toast, onHide, index }) => {
+export const ToastComponent: React.FC = () => {
+  const { toasts, hideToast } = useUnifiedStore();
+
+  if (toasts.length === 0) {
+    return null;
+  }
+
+  const toast = toasts[0]; // Get the first toast
+  const index = 0; // Since we're only showing one toast at a time
+
   const scaleXAnim = useRef(new Animated.Value(ICON_SIZE / FULL_WIDTH)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const textOpacityAnim = useRef(new Animated.Value(0)).current;
@@ -61,7 +63,7 @@ const ToastComponent: React.FC<ToastComponentProps> = ({ toast, onHide, index })
     });
   }, []);
 
-  const hideToast = () => {
+  const handleHideToast = () => {
     // Reverse animation (faster)
     Animated.sequence([
       Animated.timing(textOpacityAnim, {
@@ -87,7 +89,7 @@ const ToastComponent: React.FC<ToastComponentProps> = ({ toast, onHide, index })
         useNativeDriver: true,
       }),
     ]).start(() => {
-      onHide(toast.id);
+      hideToast(toasts[0].id);
     });
   };
 
@@ -174,7 +176,7 @@ const ToastComponent: React.FC<ToastComponentProps> = ({ toast, onHide, index })
         <Animated.View style={[styles.closeButtonContainer, { opacity: textOpacityAnim }]}>
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={hideToast}
+            onPress={handleHideToast}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="close" size={16} color="white" />

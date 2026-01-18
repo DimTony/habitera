@@ -12,7 +12,7 @@ import {
   TextStyle,
   ImageStyle,
 } from 'react-native';
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import BookmarkOutlineIcon from 'components/Icons/TabIcons/BookmarkOutlineIcon';
 
 interface CustomStyles {
@@ -43,7 +43,7 @@ interface PropertyCardProps {
   customStyles?: CustomStyles;
 }
 
-const PropertyCard: React.FC<PropertyCardProps> = ({
+const PropertyCard: React.FC<PropertyCardProps> = memo(({
   propertyName,
   location,
   bedrooms,
@@ -57,6 +57,13 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   onCardPress,
   customStyles = {},
 }) => {
+  const handleBookmarkPress = useCallback(() => {
+    onBookmarkPress?.();
+  }, [onBookmarkPress]);
+
+  const handleCardPress = useCallback(() => {
+    onCardPress?.();
+  }, [onCardPress]);
   const {
     container,
     image,
@@ -74,7 +81,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     <TouchableOpacity
       className="flex min-w-full flex-row items-center gap-4 rounded-lg bg-white p-2 shadow-sm shadow-slate-400/60"
       style={container}
-      onPress={onCardPress}
+      onPress={handleCardPress}
       activeOpacity={0.7}>
       <View>
         <Image
@@ -129,7 +136,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           <TouchableOpacity
             className="mx-4 flex h-[30px] w-[30px] items-center justify-center rounded-full bg-white shadow-sm"
             style={bookmarkButton}
-            onPress={onBookmarkPress}
+            onPress={handleBookmarkPress}
             activeOpacity={0.7}>
             {isBookmarked ? <BookmarkFilledIcon /> : <BookmarkOutlineIcon />}
           </TouchableOpacity>
@@ -137,6 +144,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
+
+PropertyCard.displayName = 'PropertyCard';
 
 export default PropertyCard;

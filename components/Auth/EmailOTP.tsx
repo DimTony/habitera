@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList } from 'components/Navigation/AuthNavigator';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '@/navigation/AppNavigator';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -14,13 +14,13 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'EmailOTP'>;
+type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'EmailOTP'>;
 
 const EmailOTP = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { themeColors } = useAppStore();
+    const { themeColors } = useUnifiedStore();
 
   // State for OTP inputs
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -149,7 +149,7 @@ const EmailOTP = () => {
                 {otp.map((digit, index) => (
                   <TextInput
                     key={index}
-                    ref={(ref) => (otpInputs.current[index] = ref)}
+                    ref={(ref) => { otpInputs.current[index] = ref; }}
                     style={styles.otpInput}
                     value={digit}
                     onChangeText={(text) => handleOtpChange(text, index)}

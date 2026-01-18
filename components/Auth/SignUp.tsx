@@ -1,17 +1,17 @@
 // SignUp.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList } from 'components/Navigation/AuthNavigator';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '@/navigation/AppNavigator';
 import { StatusBar } from 'expo-status-bar';
 import { Formik } from 'formik';
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 import * as Yup from 'yup';
 
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
+type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Signup'>;
 
 const SignupSchema = Yup.object().shape({
   firstName: Yup.string()
@@ -38,7 +38,7 @@ const SignupSchema = Yup.object().shape({
 
 const SignUp = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { setAuthenticated, themeColors } = useAppStore();
+  const { setAuthenticated, themeColors } = useUnifiedStore();
 
   // State for password visibility
   const [showPassword, setShowPassword] = useState(false);

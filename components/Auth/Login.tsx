@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import axios from 'axios';
 import SwitchIcon from 'components/Icons/SwitchIcon';
-import { AuthStackParamList } from 'components/Navigation/AuthNavigator';
+import { AuthStackParamList } from '@/navigation/AppNavigator';
 import { BaseUrl, SubscriptionKey } from 'constants/Colors';
 import { StatusBar } from 'expo-status-bar';
 import { Formik } from 'formik';
@@ -23,12 +23,15 @@ import * as SecureStore from 'expo-secure-store';
 import { RFValue } from 'react-native-responsive-fontsize';
 // import * as LocalAuthentication from 'expo-local-authentication';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from 'stores/useUnifiedStore';
+import Button from '../UI/Button';
+import Input from '../UI/Input';
+import LoadingSpinner from '../UI/LoadingSpinner';
 import * as Yup from 'yup';
 import { useRouter } from 'expo-router';
 import { ThemedText } from 'components/ThemedText';
 
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
+type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 // Define validation schema
 const LoginSchema = Yup.object().shape({
@@ -42,74 +45,43 @@ const DEV_PASSWORD = 'retreat2025';
 const Login = () => {
   const router = useRouter();
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { setAuthenticated, userType, setUserType, themeColors, setUser } = useAppStore();
+  const { setAuthenticated, userType, setUserType, themeColors, setUser, login, loading, setOnboardingComplete } = useUnifiedStore();
 
   // State for password visibility
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (values: { email: string; password: string }) => {
-    // Here you would normally call an API to authenticate the user
-    // console.log('Form values:', values);
-
-    // Mock login success
-    // In a real app, you'd call your authentication API here
-    setAuthenticated(true);
+    console.log('Login attempt:', { email: values.email, userType, isValid: true });
+    try {
+      setIsLoading(true);
+      await login(values.email, values.password, userType);
+      console.log('Login successful, setting authenticated to true');
+      setAuthenticated(true);
+      // Also set onboarding as completed since user is logging in
+      setOnboardingComplete(true);
+    } catch (error) {
+      console.error('Login error:', error);
+      Alert.alert('Login Failed', 'Invalid email or password.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleAutoLogin = async () => {
-    // Here you would normally call an API to authenticate the user
-    // console.log('Form values:', values);
     const values = { email: DEV_EMAIL, password: DEV_PASSWORD };
 
-    // Mock login success
-    // In a real app, you'd call your authentication API here
-
-    if (userType === 'agent') {
-      try {
-        setIsLoading(true);
-
-        // const response = await axios.post(
-        //   `${BaseUrl}/user/login`,
-        //   // { email: DEV_EMAIL, password: DEV_PASSWORD },
-        //   values,
-        //   {
-        //     headers: {
-        //       'Content-Type': 'application/json',
-        //       'Ocp-Apim-Subscription-Key': SubscriptionKey,
-        //     },
-        //   }
-        // );
-
-        // // const data = response
-        const session = {
-          email: DEV_EMAIL,
-          password: DEV_PASSWORD,
-          firstName: 'Bolaji',
-          lastName: 'Agbede',
-          phoneNumber: '+2348031234567',
-          userType: 'agent',
-        }
-
-        // const session = response.data.data;
-        // // console.log('rrrrr', session);
-        await AsyncStorage.setItem('session', JSON.stringify(session));
-        setUser(session)
-        setUserType('agent')
-        await SecureStore.setItemAsync('user_email', values.email);
-        await SecureStore.setItemAsync('user_password', values.password);
-        // setHasStoredCredentials(true);
-
-        // navigation.navigate('Modal' as any);
-        setAuthenticated(true);
-      } catch (error: any) {
-        console.error('Login error:', error?.message);
-        Alert.alert('Failed', 'Invalid email or password.');
-      } finally {
-        setIsLoading(false);
-      }
+    try {
+      setIsLoading(true);
+      await login(values.email, values.password, userType);
+      setAuthenticated(true);
+      setOnboardingComplete(true);
+    } catch (error) {
+      console.error('Auto login error:', error);
+      Alert.alert('Auto Login Failed', 'Invalid email or password.');
+    } finally {
+      setIsLoading(false);
     }
-    // setAuthenticated(true);
   };
 
   // Regular input field component
@@ -204,7 +176,7 @@ const Login = () => {
               password: '',
             }}
             validationSchema={LoginSchema}
-            onSubmit={userType === 'agent' ? handleAutoLogin : handleLogin}>
+            onSubmit={handleLogin}>
             {({
               handleChange,
               handleBlur,
@@ -260,8 +232,13 @@ const Login = () => {
                           : '#E2E2E2',
                   }}
                   disabled={!(isValid && dirty)}
-                  onPress={() => handleSubmit()}>
-                  <Text className="text-lg font-bold text-white">Log in</Text>
+                  onPress={() => {
+                    console.log('Login button pressed:', { isValid, dirty, values });
+                    handleSubmit();
+                  }}>
+                  <Text className="text-lg font-bold text-white">
+                    {isLoading ? 'Logging in...' : 'Log in'}
+                  </Text>
                 </TouchableOpacity>
 
                 {__DEV__ && (

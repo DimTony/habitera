@@ -14,7 +14,7 @@ import {
 import { TouchableOpacity } from 'react-native';
 import { StyleSheet, Text } from 'react-native';
 import { View } from 'react-native';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 import { useNavigation } from '@react-navigation/native';
 import EvilIcons from '@expo/vector-icons/EvilIcons';
 import { BackArrow, CaretDown, Edit, MailIcon, PhoneIncoming, UploadIcon } from 'components/Svg';
@@ -262,7 +262,7 @@ interface FormData {
 type HomeScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'AddProperty'>;
 
 const AddProperty = () => {
-  const { user, resetState } = useAppStore();
+  const { auth } = useUnifiedStore();
   const [activeTab, setActiveTab] = useState<'For Rent' | 'For Sale'>('For Rent');
   const navigation = useNavigation<HomeScreenNavigationProp>();
 
@@ -281,8 +281,8 @@ const AddProperty = () => {
   });
 
   const gradientColors = useMemo(() => {
-    return generateStableGradientPair(user?._id ?? user?.id ?? '');
-  }, [user?.id, user?._id]);
+    return generateStableGradientPair(auth?.user?.id ?? auth?.user?.id ?? '');
+  }, [auth?.user?.id, auth?.user?.id]);
 
   const tabs = ['For Rent', 'For Sale'] as const;
 

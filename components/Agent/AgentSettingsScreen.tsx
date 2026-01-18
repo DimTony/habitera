@@ -22,7 +22,7 @@ import { Entypo } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AgentRootStackParamList } from 'components/User/types/navigation';
-import { useAppStore } from 'stores/useAppStore';
+import { useUnifiedStore } from '@/stores/useUnifiedStore';
 import LottieView from 'lottie-react-native';
 
 type ScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'MainTabs'>;
@@ -37,7 +37,8 @@ interface SettingsItem {
 
 const AgentSettingsScreen = () => {
   const navigation = useNavigation<ScreenNavigationProp>();
-  const { resetState } = useAppStore();
+  const { resetState } = useUnifiedStore();
+  const { auth } = useUnifiedStore();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogoutPress = () => setShowLogoutModal(true);
