@@ -7,24 +7,36 @@
       "favicon": "./assets/favicon.png"
     },
     "experiments": {
-      "tsconfigPaths": true
+      "tsconfigPaths": true,
+      "reactCompiler": true
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#678B83",
+          "image": "./assets/images/splash-full.png",
+          "resizeMode": "cover",
+          "enableFullScreenImage_legacy": true
+        }
+      ],
       [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "This app needs access to your location to show nearby properties."
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Habitera to access your photos so you can set a profile picture."
+        }
+      ],
+      "react-native-maps"
     ],
     "orientation": "portrait",
-    "icon": "./assets/images/splash-full.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/images/splash-full.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#678B83"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -34,7 +46,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/splash-full.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#678B83"
       },
       "package": "com.anonymous.habitera"

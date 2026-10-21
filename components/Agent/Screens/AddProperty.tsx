@@ -1,8 +1,16 @@
-import { ThemedText } from 'components/ThemedText';
-import { LinearGradient } from 'expo-linear-gradient';
-import { generateStableGradientPair, getInitials } from 'lib/helpers';
-import React, { useCallback, useMemo, useState } from 'react';
+import LocationPickerModal from 'components/User/Modals/LocationPickerModal';
+import * as ImagePicker from 'expo-image-picker';
 import {
+  createProperty,
+  submitForReview,
+  uploadPropertyImages,
+  type CreatePropertyRequest,
+} from 'lib/api/properties';
+import { getErrorMessage } from 'lib/api/errors';
+import type { LocationSuggestion } from 'lib/api/types';
+import React, { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
   Image,
   ScrollView,
   TextInput,
@@ -10,20 +18,19 @@ import {
   FlatList,
   Alert,
   KeyboardAvoidingView,
+  TouchableOpacity,
+  StyleSheet,
+  Text,
+  View,
+  Platform,
 } from 'react-native';
-import { TouchableOpacity } from 'react-native';
-import { StyleSheet, Text } from 'react-native';
-import { View } from 'react-native';
-import { useAppStore } from 'stores/useAppStore';
-import { useNavigation } from '@react-navigation/native';
-import EvilIcons from '@expo/vector-icons/EvilIcons';
-import { BackArrow, CaretDown, Edit, MailIcon, PhoneIncoming, UploadIcon } from 'components/Svg';
+import { BackArrow, CaretDown, UploadIcon } from 'components/Svg';
 import LibraryDatePicker from '../UI/DatePicker';
-import { Platform } from 'react-native';
-import { navigate } from 'expo-router/build/global-state/routing';
 import { useRouter } from 'expo-router';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
+import { useToastStore } from 'stores/useToastStore';
+
+const MIN_PHOTOS = 3;
+const MAX_PHOTOS = 12;
 
 const propertyTypes = ['Residential', 'Commercial', 'Industrial', 'Land', 'Mixed Use'];
 
@@ -246,9 +253,8 @@ const FacilitiesMultiSelect: React.FC<FacilitiesMultiSelectProps> = ({
   );
 };
 
-interface FormData {
+interface PropertyFormState {
   propertyOption: 'For Rent' | 'For Sale';
-  location: string;
   propertyType: string;
   apartmentType: string;
   bathrooms: string;
@@ -259,17 +265,67 @@ interface FormData {
   description: string;
 }
 
-type HomeScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'AddProperty'>;
+function mapPropertyType(value: string): string {
+  switch (value) {
+    case 'Commercial':
+    case 'Industrial':
+      return 'Commercial';
+    case 'Land':
+      return 'Land';
+    case 'Mixed Use':
+      return 'Condo';
+    case 'Residential':
+    default:
+      return 'Apartment';
+  }
+}
+
+function mapBedrooms(apartmentType: string): number {
+  if (apartmentType.startsWith('Studio')) return 0;
+  if (apartmentType.startsWith('5+')) return 5;
+  if (apartmentType === 'Duplex' || apartmentType === 'Penthouse') return 3;
+  const match = apartmentType.match(/^(\d+)/);
+  return match ? Number(match[1]) : 1;
+}
+
+function mapBathrooms(value: string): number {
+  if (value === '6+') return 6;
+  return Number(value) || 1;
+}
+
+function mapTenor(value: string, listingType: 'For Rent' | 'For Sale'): string {
+  if (listingType === 'For Sale') return 'Outright';
+  switch (value) {
+    case 'Monthly':
+      return 'Monthly';
+    case 'Quarterly':
+      return 'Monthly';
+    case 'Bi-Annual':
+      return 'BiAnnually';
+    case '2 Years':
+    case '3 Years':
+    case 'Annual':
+    default:
+      return 'Annually';
+  }
+}
+
+function buildTitle(apartmentType: string, propertyType: string, city?: string | null) {
+  const place = city?.trim() ? ` in ${city.trim()}` : '';
+  return `${apartmentType} ${propertyType}${place}`.trim();
+}
 
 const AddProperty = () => {
-  const { user, resetState } = useAppStore();
   const [activeTab, setActiveTab] = useState<'For Rent' | 'For Sale'>('For Rent');
-  const navigation = useNavigation<HomeScreenNavigationProp>();
+  const router = useRouter();
+  const { showToast } = useToastStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [locationPickerVisible, setLocationPickerVisible] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<LocationSuggestion | null>(null);
+  const [imageUris, setImageUris] = useState<string[]>([]);
 
-  // Form state
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<PropertyFormState>({
     propertyOption: 'For Rent',
-    location: '',
     propertyType: '',
     apartmentType: '',
     bathrooms: '',
@@ -280,19 +336,19 @@ const AddProperty = () => {
     description: '',
   });
 
-  const gradientColors = useMemo(() => {
-    return generateStableGradientPair(user?._id ?? user?.id ?? '');
-  }, [user?.id, user?._id]);
-
   const tabs = ['For Rent', 'For Sale'] as const;
 
-  const updateFormData = useCallback((updates: Partial<FormData>) => {
+  const updateFormData = useCallback((updates: Partial<PropertyFormState>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
   }, []);
 
   const validateForm = useCallback((): boolean => {
-    const requiredFields = [
-      'location',
+    if (!selectedLocation) {
+      Alert.alert('Validation Error', 'Please select a location');
+      return false;
+    }
+
+    const requiredFields: Array<keyof PropertyFormState> = [
       'propertyType',
       'apartmentType',
       'bathrooms',
@@ -301,7 +357,7 @@ const AddProperty = () => {
     ];
 
     for (const field of requiredFields) {
-      if (!formData[field as keyof FormData]) {
+      if (!formData[field]) {
         Alert.alert(
           'Validation Error',
           `Please fill in the ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`
@@ -320,31 +376,183 @@ const AddProperty = () => {
       return false;
     }
 
+    if (imageUris.length < MIN_PHOTOS) {
+      Alert.alert(
+        'Validation Error',
+        `Please upload at least ${MIN_PHOTOS} photos of the property`
+      );
+      return false;
+    }
+
+    const price = Number(String(formData.price).replace(/,/g, ''));
+    if (!Number.isFinite(price) || price <= 0) {
+      Alert.alert('Validation Error', 'Please enter a valid price');
+      return false;
+    }
+
     return true;
-  }, [formData, activeTab]);
+  }, [formData, activeTab, selectedLocation, imageUris.length]);
+
+  const pickImages = useCallback(async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        showToast({
+          type: 'error',
+          message: 'Photo library permission is required to upload property images.',
+        });
+        return;
+      }
+
+      const remaining = MAX_PHOTOS - imageUris.length;
+      if (remaining <= 0) {
+        Alert.alert('Limit reached', `You can upload up to ${MAX_PHOTOS} photos.`);
+        return;
+      }
+
+      const picked = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: remaining,
+        quality: 0.85,
+      });
+
+      if (picked.canceled || !picked.assets?.length) return;
+
+      const nextUris = picked.assets
+        .map((asset) => asset.uri)
+        .filter(Boolean)
+        .slice(0, remaining);
+
+      setImageUris((prev) => [...prev, ...nextUris].slice(0, MAX_PHOTOS));
+    } catch (error) {
+      showToast({
+        type: 'error',
+        message: getErrorMessage(error, 'Unable to pick images.'),
+      });
+    }
+  }, [imageUris.length, showToast]);
+
+  const removeImage = useCallback((uri: string) => {
+    setImageUris((prev) => prev.filter((item) => item !== uri));
+  }, []);
+
+  const buildCreatePayload = useCallback((): CreatePropertyRequest | null => {
+    if (!selectedLocation || !validateForm()) return null;
+
+    const price = Number(String(formData.price).replace(/,/g, ''));
+    const city = selectedLocation.city?.trim() || selectedLocation.label;
+    const state = selectedLocation.state?.trim() || city;
+    const country = selectedLocation.country?.trim() || 'Nigeria';
+    const street =
+      selectedLocation.label?.split(',')[0]?.trim() ||
+      city ||
+      'Address unavailable';
+
+    const facilitiesNote =
+      formData.selectedFacilities.length > 0
+        ? `\n\nFacilities: ${formData.selectedFacilities.join(', ')}`
+        : '';
+    const availabilityNote = formData.availableDate
+      ? `\n\nAvailable from: ${formData.availableDate.toISOString().slice(0, 10)}`
+      : '';
+
+    return {
+      title: buildTitle(formData.apartmentType, formData.propertyType, city),
+      description: `${formData.description.trim()}${facilitiesNote}${availabilityNote}`,
+      propertyType: mapPropertyType(formData.propertyType),
+      listingType: activeTab === 'For Sale' ? 'ForSale' : 'ForRent',
+      tenor: mapTenor(formData.tenor, activeTab),
+      street,
+      city,
+      state,
+      country,
+      postalCode: '000000',
+      latitude: selectedLocation.latitude,
+      longitude: selectedLocation.longitude,
+      bedrooms: mapBedrooms(formData.apartmentType),
+      bathrooms: mapBathrooms(formData.bathrooms),
+      price,
+      currency: 'NGN',
+    };
+  }, [selectedLocation, validateForm, formData, activeTab]);
+
+  const submitListing = useCallback(
+    async (publish: boolean) => {
+      const payload = buildCreatePayload();
+      if (!payload) return;
+
+      setIsSubmitting(true);
+      try {
+        const createResult = await createProperty(payload);
+        if (!createResult.success || !createResult.data?.id) {
+          showToast({
+            type: 'error',
+            message: createResult.message || 'Unable to create listing.',
+          });
+          return;
+        }
+
+        const propertyId = createResult.data.id;
+        const uploadResult = await uploadPropertyImages(propertyId, imageUris);
+        if (!uploadResult.success) {
+          showToast({
+            type: 'error',
+            message: uploadResult.message || 'Listing created but image upload failed.',
+          });
+          router.replace('/(agent)/(tabs)');
+          return;
+        }
+
+        if (publish) {
+          const reviewResult = await submitForReview(propertyId);
+          if (!reviewResult.success) {
+            showToast({
+              type: 'warning',
+              message:
+                reviewResult.message ||
+                'Listing saved, but submitting for review failed.',
+            });
+            router.replace('/(agent)/(tabs)');
+            return;
+          }
+          showToast({
+            type: 'success',
+            message:
+              reviewResult.message ||
+              'Submitted for review. It will go live after admin approval.',
+          });
+        } else {
+          showToast({ type: 'success', message: 'Property saved as draft.' });
+        }
+
+        router.replace('/(agent)/(tabs)');
+      } catch (error) {
+        showToast({
+          type: 'error',
+          message: getErrorMessage(error, 'Unable to submit property.'),
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [buildCreatePayload, imageUris, router, showToast]
+  );
 
   const handleSaveForLater = useCallback(() => {
-    // Save draft functionality
-    console.log('Saving draft:', formData);
-    Alert.alert('Success', 'Property saved as draft');
-  }, [formData]);
+    void submitListing(false);
+  }, [submitListing]);
 
   const handleSubmit = useCallback(() => {
-    if (validateForm()) {
-      const submissionData = {
-        ...formData,
-        propertyOption: activeTab,
-      };
-      console.log('Submitting property:', submissionData);
-      Alert.alert('Success', 'Property submitted successfully');
-    }
-  }, [formData, activeTab, validateForm]);
+    void submitListing(true);
+  }, [submitListing]);
 
   const TabButton = React.memo(
     ({ title, isActive, onPress }: { title: string; isActive: boolean; onPress: () => void }) => (
       <TouchableOpacity
         style={[styles.tabButton, isActive && styles.activeTabButton]}
-        onPress={onPress}>
+        onPress={onPress}
+        disabled={isSubmitting}>
         <Text style={[styles.tabText, isActive && styles.activeTabText]}>{title}</Text>
       </TouchableOpacity>
     )
@@ -359,7 +567,7 @@ const AddProperty = () => {
         <View style={styles.header}>
           <View style={styles.profileSection}>
             <View style={styles.profileInfo}>
-              <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                 <BackArrow />
               </TouchableOpacity>
 
@@ -388,16 +596,21 @@ const AddProperty = () => {
             ))}
           </View>
 
-          <View style={styles.inputContainer}>
+          <TouchableOpacity
+            style={styles.inputContainer}
+            onPress={() => setLocationPickerVisible(true)}
+            activeOpacity={0.8}>
             <Text style={styles.sectionLabel}>Location</Text>
-            <TextInput
-              placeholder="Find Location"
-              placeholderTextColor="#9F9F9F"
-              style={styles.textInput}
-              value={formData.location}
-              onChangeText={(text) => setFormData((prev) => ({ ...prev, location: text }))}
-            />
-          </View>
+            <Text
+              style={[
+                styles.textInput,
+                !selectedLocation && { color: '#9F9F9F' },
+                { textAlignVertical: 'center' },
+              ]}
+              numberOfLines={2}>
+              {selectedLocation?.label || 'Find Location'}
+            </Text>
+          </TouchableOpacity>
 
           <Dropdown
             label="Property Type"
@@ -491,27 +704,79 @@ const AddProperty = () => {
             />
           </View>
 
-          <TouchableOpacity style={styles.uploadContainer}>
+          <View style={styles.uploadContainer}>
             <Text style={styles.sectionLabel}>Upload Images</Text>
 
-            <View style={styles.uploadIconContainer}>
-              <UploadIcon />
-            </View>
+            <TouchableOpacity
+              onPress={pickImages}
+              disabled={isSubmitting}
+              style={styles.uploadTapArea}
+              activeOpacity={0.8}>
+              <View style={styles.uploadIconContainer}>
+                <UploadIcon />
+              </View>
+              <Text style={styles.uploadTitle}>Click to Upload</Text>
+              <Text style={styles.uploadSubtitle}>
+                PNG, JPG or WEBP · at least {MIN_PHOTOS} photos required ({imageUris.length}/
+                {MAX_PHOTOS})
+              </Text>
+            </TouchableOpacity>
 
-            <Text style={styles.uploadTitle}>Click to Upload</Text>
-            <Text style={styles.uploadSubtitle}>SVG, PNG, JPG or GIF (max. 800x400px)</Text>
-          </TouchableOpacity>
+            {imageUris.length > 0 ? (
+              <View style={styles.imagePreviewGrid}>
+                {imageUris.map((uri) => (
+                  <View key={uri} style={styles.imagePreviewItem}>
+                    <Image source={{ uri }} style={styles.imagePreview} />
+                    <TouchableOpacity
+                      style={styles.removeImageButton}
+                      onPress={() => removeImage(uri)}
+                      disabled={isSubmitting}>
+                      <Text style={styles.removeImageButtonText}>×</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                {imageUris.length < MAX_PHOTOS ? (
+                  <TouchableOpacity
+                    style={styles.addMoreImageButton}
+                    onPress={pickImages}
+                    disabled={isSubmitting}>
+                    <Text style={styles.addMoreImageText}>+</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
         </ScrollView>
 
         {/* Fixed Bottom Action Buttons */}
         <View style={styles.bottomButtonContainer}>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSaveForLater}>
+          <TouchableOpacity
+            style={[styles.saveButton, isSubmitting && styles.disabledButton]}
+            onPress={handleSaveForLater}
+            disabled={isSubmitting}>
             <Text style={styles.saveButtonText}>Save For Later</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Submit</Text>
+          <TouchableOpacity
+            style={[styles.submitButton, isSubmitting && styles.disabledButton]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}>
+            {isSubmitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.submitButtonText}>Submit</Text>
+            )}
           </TouchableOpacity>
         </View>
+
+        <LocationPickerModal
+          visible={locationPickerVisible}
+          selected={selectedLocation}
+          onClose={() => setLocationPickerVisible(false)}
+          onSelect={(location) => {
+            setSelectedLocation(location);
+            setLocationPickerVisible(false);
+          }}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -693,6 +958,68 @@ const styles = StyleSheet.create({
   uploadSubtitle: {
     color: '#8C94A0',
     fontSize: 12,
+    textAlign: 'center',
+  },
+  uploadTapArea: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  imagePreviewGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 8,
+  },
+  imagePreviewItem: {
+    width: 88,
+    height: 88,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#f0f0f0',
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeImageButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  addMoreImageButton: {
+    width: 88,
+    height: 88,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E2E2',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fafafa',
+  },
+  addMoreImageText: {
+    fontSize: 28,
+    color: '#8C94A0',
+    fontWeight: '300',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   bottomButtonContainer: {
     flexDirection: 'row',

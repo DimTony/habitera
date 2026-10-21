@@ -1,8 +1,8 @@
+import { useRouter } from 'expo-router';
 import { BackArrow, EmailIcon, HeadsetIcon, UserIcon } from 'components/Svg';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import Entypo from '@expo/vector-icons/Entypo';
-import { useNavigation } from '@react-navigation/native';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -12,14 +12,11 @@ import {
   Linking,
   Alert,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
 import { StyleSheet } from 'react-native';
 
-type ScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'Profile'>;
 
 const CustomerSupport = () => {
-  const navigation = useNavigation<ScreenNavigationProp>();
+  const router = useRouter();
 
   const handleEmailPress = async () => {
     const email = 'support@yourcompany.com'; // Replace with your actual support email
@@ -74,7 +71,7 @@ const CustomerSupport = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <BackArrow />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Customer Support</Text>

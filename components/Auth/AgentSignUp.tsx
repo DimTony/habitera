@@ -1,17 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList } from 'components/Navigation/AuthNavigator';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Formik } from 'formik';
+import { register } from 'lib/api/auth';
+import { getErrorMessage } from 'lib/api/errors';
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from 'stores/useAppStore';
-// import { themeColors } from 'theme';
+import { useToastStore } from 'stores/useToastStore';
 import * as Yup from 'yup';
-
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'AgentSignup'>;
 
 const SignupSchema = Yup.object().shape({
   firstName: Yup.string()
@@ -37,14 +43,14 @@ const SignupSchema = Yup.object().shape({
 });
 
 const AgentSignUp = () => {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { setAuthenticated, userType, setUserType, themeColors } = useAppStore();
-
-  // State for password visibility
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { setUserType, themeColors } = useAppStore();
+  const { showToast } = useToastStore();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSignup = (values: {
+  const handleSignup = async (values: {
     firstName: string;
     surname: string;
     email: string;
@@ -52,15 +58,48 @@ const AgentSignUp = () => {
     password: string;
     confirmPassword: string;
   }) => {
-    // Here you would normally call an API to register the user
-    console.log('Form values:', values);
+    try {
+      const result = await register({
+        email: values.email.trim(),
+        password: values.password,
+        userType: 'Agent',
+        firstName: values.firstName.trim(),
+        lastName: values.surname.trim(),
+        phoneNumber: values.phoneNumber.trim(),
+      });
 
-    // Mock signup success
-    // In a real app, you'd call your authentication API here
-    navigation.navigate('EmailOTP');
+      if (!result.success) {
+        showToast({ type: 'error', message: result.message || 'Unable to create account.' });
+        return;
+      }
+
+      // Only continue to OTP after a real pending registration.
+      const registered =
+        result.statusCode === 201 ||
+        result.message?.toLowerCase().includes('verification code');
+      if (!registered) {
+        showToast({
+          type: 'error',
+          message: result.message || 'Unable to create account. Please sign in instead.',
+        });
+        return;
+      }
+
+      // Set role only after registration succeeds (used as OTP fallback).
+      setUserType('agent');
+      showToast({
+        type: 'success',
+        message: result.message || 'Check your email for a verification code.',
+      });
+      router.push({
+        pathname: '/(auth)/email-otp',
+        params: { email: values.email.trim(), purpose: 'verify', role: 'agent' },
+      });
+    } catch (error) {
+      showToast({ type: 'error', message: getErrorMessage(error, 'Unable to create account.') });
+    }
   };
 
-  // Regular input field component
   const FormField = ({
     field,
     label,
@@ -86,12 +125,12 @@ const AgentSignUp = () => {
         keyboardType={keyboardType}
         autoCapitalize={field === 'email' ? 'none' : 'words'}
         secureTextEntry={secureTextEntry}
+        autoCorrect={false}
       />
       {touched[field] && errors[field] && <Text style={styles.errorText}>{errors[field]}</Text>}
     </View>
   );
 
-  // Password field component with toggle visibility
   const PasswordField = ({
     field,
     label,
@@ -101,7 +140,7 @@ const AgentSignUp = () => {
     touched,
     handleChange,
     handleBlur,
-    showPassword,
+    showPassword: visible,
     togglePasswordVisibility,
   }: any) => (
     <View style={[styles.fieldSet, touched[field] && errors[field] ? styles.fieldSetError : {}]}>
@@ -115,11 +154,11 @@ const AgentSignUp = () => {
           value={values[field]}
           onChangeText={handleChange(field)}
           onBlur={handleBlur(field)}
-          secureTextEntry={!showPassword}
+          secureTextEntry={!visible}
           autoCapitalize="none"
         />
         <TouchableOpacity style={styles.eyeIcon} onPress={togglePasswordVisibility}>
-          <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={24} color="#636363" />
+          <Ionicons name={visible ? 'eye-off' : 'eye'} size={24} color="#636363" />
         </TouchableOpacity>
       </View>
       {touched[field] && errors[field] && <Text style={styles.errorText}>{errors[field]}</Text>}
@@ -127,26 +166,35 @@ const AgentSignUp = () => {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: themeColors.bgColor(1) }}>
-      <StatusBar style="auto" />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }} className="h-full">
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <StatusBar style="light" />
+      <ScrollView
+        style={{ flex: 1, backgroundColor: '#fff' }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+        showsVerticalScrollIndicator={false}>
         <SafeAreaView
+          edges={['top']}
           className="min-h-72 w-full"
-          style={{ backgroundColor: themeColors.bgColor(1) }}>
+          style={{ backgroundColor: themeColors.primaryColor }}>
           <View className="px-8 py-5">
             <Text className="text-4xl text-white">Create your</Text>
             <Text className="text-4xl text-white">Habitera Account</Text>
           </View>
-          <Text className="px-8 text-sm text-white">Provide details to create your account</Text>
+          <Text className="px-8 pb-10 text-sm text-white">
+            Provide details to create your account
+          </Text>
         </SafeAreaView>
 
         <View
           style={{
             borderTopLeftRadius: 40,
             borderTopRightRadius: 40,
-            flex: 1,
-            minHeight: 500,
-            backgroundColor: 'white',
+            flexGrow: 1,
+            backgroundColor: '#fff',
+            paddingBottom: Math.max(insets.bottom, 16) + 32,
           }}
           className="-mt-12 bg-white p-6 pt-6">
           <Formik
@@ -170,6 +218,7 @@ const AgentSignUp = () => {
               touched,
               isValid,
               dirty,
+              isSubmitting,
             }) => (
               <View className="mt-10">
                 <FormField
@@ -259,28 +308,26 @@ const AgentSignUp = () => {
                   className="my-8 items-center rounded-xl py-4"
                   style={{
                     backgroundColor:
-                      isValid && dirty ? themeColors.bgColor(1) : themeColors.bgColor(0.5),
+                      isValid && dirty
+                        ? themeColors.primaryColor
+                        : themeColors.bgColor?.(0.5) ?? '#E2E2E2',
                   }}
-                  disabled={!(isValid && dirty)}
-                  onPress={() => handleSubmit}>
-                  <Text className="text-lg font-bold text-white">Create Account</Text>
+                  disabled={!(isValid && dirty) || isSubmitting}
+                  onPress={() => handleSubmit()}>
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text className="text-lg font-bold text-white">Create Account</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             )}
           </Formik>
 
-          <View className="flex w-full flex-1 items-center justify-center gap-8 bg-white px-8 py-10">
-            <TouchableOpacity onPress={() => setUserType(userType === 'user' ? 'agent' : 'user')}>
-              {/* <View className="flex-row items-center justify-center gap-4">
-              <SwitchIcon />
-              <Text style={{ color: themeColors.primaryUser }}>
-                Switch to {userType === 'user' ? 'agent' : 'user'}
-              </Text>
-            </View> */}
-            </TouchableOpacity>
+          <View className="flex w-full items-center justify-center gap-8 bg-white px-8 py-6">
             <View className="flex-row items-center justify-center gap-2">
               <Text>Already have an account?</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <TouchableOpacity onPress={() => router.replace('/(auth)')}>
                 <Text style={{ color: themeColors.primaryColor }}>Log in</Text>
               </TouchableOpacity>
             </View>

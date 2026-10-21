@@ -10,7 +10,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { AntDesign } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -20,16 +20,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
 import { StyleSheet } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { FLOATING_BUTTON_SPACE } from '../AgentHomeScreen';
 
-type ScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'Profile'>;
-
 const AlertSettings = () => {
-  const navigation = useNavigation<ScreenNavigationProp>();
+  const router = useRouter();
   const [showAlerts, setShowAlerts] = useState(true);
   const [showTrashModal, setShowTrashModal] = useState(false);
 
@@ -73,7 +69,7 @@ const AlertSettings = () => {
         </View>
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.actionButton}
-          onPress={() => navigation.navigate('EditAlert')}
+          onPress={() => router.push('/(agent)/edit-alert')}
           
           >
             <ThickEditIcon />
@@ -100,7 +96,7 @@ const AlertSettings = () => {
           <Text style={styles.emptySubtitle}>Set up alerts for when my properties are viewed</Text>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => navigation.navigate('AddAlert')}>
+            onPress={() => router.push('/(agent)/add-alert')}>
             <Text style={styles.addButtonText}>Add Alert</Text>
           </TouchableOpacity>
         </View>
@@ -133,7 +129,7 @@ const AlertSettings = () => {
 
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <BackArrow />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Alert Settings</Text>
@@ -147,9 +143,9 @@ const AlertSettings = () => {
 
       {alerts.length !== 0 && (
         <TouchableOpacity
-          onPress={() => navigation.navigate('AddAlert')}
+          onPress={() => router.push('/(agent)/add-alert')}
           style={styles.floatingButton}>
-          <AntDesign name="pluscircle" size={50} color="black" />
+          <AntDesign name="plus-circle" size={50} color="black" />
         </TouchableOpacity>
       )}
 

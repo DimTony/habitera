@@ -1,7 +1,7 @@
+import { useRouter } from 'expo-router';
 import { BackArrow } from 'components/Svg';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -10,13 +10,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
 import { StyleSheet } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { FLOATING_BUTTON_SPACE } from '../AgentHomeScreen';
 
-type ScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'Notifications'>;
 
 interface NotificationItem {
   id: string;
@@ -29,7 +26,7 @@ interface NotificationItem {
 }
 
 const Notifications = () => {
-  const navigation = useNavigation<ScreenNavigationProp>();
+  const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(true);
 
   const mockNotifications: NotificationItem[] = [
@@ -163,7 +160,7 @@ const Notifications = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <BackArrow />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Notifications</Text>

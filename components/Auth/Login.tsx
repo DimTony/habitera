@@ -1,118 +1,110 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import axios from 'axios';
 import SwitchIcon from 'components/Icons/SwitchIcon';
-import { AuthStackParamList } from 'components/Navigation/AuthNavigator';
-import { BaseUrl, SubscriptionKey } from 'constants/Colors';
+import { ThemedText } from 'components/ThemedText';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Formik } from 'formik';
+import { login } from 'lib/api/auth';
+import { getErrorMessage } from 'lib/api/errors';
+import { persistAuthSession, resolveAuthUserType } from 'lib/auth/session';
 import React, { useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Image,
-  Alert,
+  View,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
 import { RFValue } from 'react-native-responsive-fontsize';
-// import * as LocalAuthentication from 'expo-local-authentication';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from 'stores/useAppStore';
+import { useToastStore } from 'stores/useToastStore';
 import * as Yup from 'yup';
-import { useRouter } from 'expo-router';
-import { ThemedText } from 'components/ThemedText';
 
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
-
-// Define validation schema
 const LoginSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email').required('Email is required'),
   password: Yup.string().required('Password is required'),
 });
 
-const DEV_EMAIL = 'bolaji.agbede@example.com';
-const DEV_PASSWORD = 'retreat2025';
-
 const Login = () => {
   const router = useRouter();
-  const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { setAuthenticated, userType, setUserType, themeColors, setUser } = useAppStore();
-
-  // State for password visibility
+  const { userType, setUserType, themeColors } = useAppStore();
+  const { showToast } = useToastStore();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const goToEmailVerification = (email: string, message?: string) => {
+    showToast({
+      type: 'warning',
+      message: message || "We've sent a verification code to your email.",
+    });
+    router.push({
+      pathname: '/(auth)/email-otp',
+      params: {
+        email,
+        purpose: 'verify',
+        role: userType === 'agent' ? 'agent' : 'user',
+      },
+    });
+  };
+
+  const isUnverifiedLoginMessage = (message?: string | null) => {
+    const normalized = message?.toLowerCase() ?? '';
+    return (
+      normalized.includes('not verified') ||
+      normalized.includes('verify your email') ||
+      normalized.includes('verification code')
+    );
+  };
 
   const handleLogin = async (values: { email: string; password: string }) => {
-    // Here you would normally call an API to authenticate the user
-    // console.log('Form values:', values);
+    try {
+      const result = await login(values);
 
-    // Mock login success
-    // In a real app, you'd call your authentication API here
-    setAuthenticated(true);
-  };
-
-  const handleAutoLogin = async () => {
-    // Here you would normally call an API to authenticate the user
-    // console.log('Form values:', values);
-    const values = { email: DEV_EMAIL, password: DEV_PASSWORD };
-
-    // Mock login success
-    // In a real app, you'd call your authentication API here
-
-    if (userType === 'agent') {
-      try {
-        setIsLoading(true);
-
-        // const response = await axios.post(
-        //   `${BaseUrl}/user/login`,
-        //   // { email: DEV_EMAIL, password: DEV_PASSWORD },
-        //   values,
-        //   {
-        //     headers: {
-        //       'Content-Type': 'application/json',
-        //       'Ocp-Apim-Subscription-Key': SubscriptionKey,
-        //     },
-        //   }
-        // );
-
-        // // const data = response
-        const session = {
-          email: DEV_EMAIL,
-          password: DEV_PASSWORD,
-          firstName: 'Bolaji',
-          lastName: 'Agbede',
-          phoneNumber: '+2348031234567',
-          userType: 'agent',
+      if (!result.success || !result.data?.token) {
+        if (isUnverifiedLoginMessage(result.message)) {
+          goToEmailVerification(values.email, result.message);
+          return;
         }
 
-        // const session = response.data.data;
-        // // console.log('rrrrr', session);
-        await AsyncStorage.setItem('session', JSON.stringify(session));
-        setUser(session)
-        setUserType('agent')
-        await SecureStore.setItemAsync('user_email', values.email);
-        await SecureStore.setItemAsync('user_password', values.password);
-        // setHasStoredCredentials(true);
-
-        // navigation.navigate('Modal' as any);
-        setAuthenticated(true);
-      } catch (error: any) {
-        console.error('Login error:', error?.message);
-        Alert.alert('Failed', 'Invalid email or password.');
-      } finally {
-        setIsLoading(false);
+        showToast({ type: 'error', message: result.message || 'Invalid email or password.' });
+        return;
       }
+
+      const accountType = resolveAuthUserType(result.data.user, null);
+      // Always route from the account type returned by the API, not the login toggle.
+      if (accountType && accountType !== userType) {
+        showToast({
+          type: 'warning',
+          message:
+            accountType === 'agent'
+              ? 'This email is an agent account. Signing you into the agent app.'
+              : 'This email is a user account. Signing you into the user app.',
+        });
+      }
+
+      await persistAuthSession({
+        token: result.data.token,
+        refreshToken: result.data.refreshToken,
+        user: result.data.user,
+        // Only used if API omits type/kind entirely.
+        fallbackUserType: userType === 'agent' ? 'agent' : 'user',
+      });
+      showToast({ type: 'success', message: result.message || 'Welcome back.' });
+    } catch (error) {
+      const message = getErrorMessage(error, 'Invalid email or password.');
+
+      if (isUnverifiedLoginMessage(message)) {
+        goToEmailVerification(values.email, message);
+        return;
+      }
+
+      showToast({ type: 'error', message });
     }
-    // setAuthenticated(true);
   };
 
-  // Regular input field component
   const FormField = ({
     field,
     label,
@@ -136,6 +128,7 @@ const Login = () => {
         onBlur={handleBlur(field)}
         keyboardType={keyboardType}
         autoCapitalize={field === 'email' ? 'none' : 'words'}
+        autoCorrect={false}
       />
       {touched[field] && errors[field] && (
         <Text style={[styles.errorText, { color: '#FF3B30' }]}>{errors[field]}</Text>
@@ -143,7 +136,6 @@ const Login = () => {
     </View>
   );
 
-  // Password field component with toggle visibility
   const PasswordField = ({
     field,
     label,
@@ -153,7 +145,7 @@ const Login = () => {
     touched,
     handleChange,
     handleBlur,
-    showPassword,
+    showPassword: visible,
     togglePasswordVisibility,
   }: any) => (
     <View style={[styles.fieldSet, touched[field] && errors[field] ? styles.fieldSetError : {}]}>
@@ -167,11 +159,11 @@ const Login = () => {
           value={values[field]}
           onChangeText={handleChange(field)}
           onBlur={handleBlur(field)}
-          secureTextEntry={!showPassword}
+          secureTextEntry={!visible}
           autoCapitalize="none"
         />
         <TouchableOpacity style={styles.eyeIcon} onPress={togglePasswordVisibility}>
-          <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={24} color="#636363" />
+          <Ionicons name={visible ? 'eye-off' : 'eye'} size={24} color="#636363" />
         </TouchableOpacity>
       </View>
       {touched[field] && errors[field] && (
@@ -204,7 +196,7 @@ const Login = () => {
               password: '',
             }}
             validationSchema={LoginSchema}
-            onSubmit={userType === 'agent' ? handleAutoLogin : handleLogin}>
+            onSubmit={handleLogin}>
             {({
               handleChange,
               handleBlur,
@@ -214,6 +206,7 @@ const Login = () => {
               touched,
               isValid,
               dirty,
+              isSubmitting,
             }) => (
               <View className="mt-10">
                 <FormField
@@ -242,7 +235,7 @@ const Login = () => {
                 />
 
                 <View className="mb-8 flex w-full items-end justify-start px-3">
-                  <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                  <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
                     <Text style={{ color: themeColors.primaryColor }} className="text-xs">
                       Forgot Password?
                     </Text>
@@ -259,17 +252,23 @@ const Login = () => {
                           ? themeColors.bgColor(0.5)
                           : '#E2E2E2',
                   }}
-                  disabled={!(isValid && dirty)}
+                  disabled={!(isValid && dirty) || isSubmitting}
                   onPress={() => handleSubmit()}>
-                  <Text className="text-lg font-bold text-white">Log in</Text>
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text className="text-lg font-bold text-white">Log in</Text>
+                  )}
                 </TouchableOpacity>
 
                 {__DEV__ && (
                   <TouchableOpacity
                     style={styles.autoLoginButton}
-                    onPress={() => handleAutoLogin()}
-                    disabled={isLoading}>
-                    <ThemedText style={styles.autoLoginButtonText}>🚀 AUTOLOGIN (DEV)</ThemedText>
+                    onPress={() => handleSubmit()}
+                    disabled={isSubmitting || !(isValid && dirty)}>
+                    <ThemedText style={styles.autoLoginButtonText}>
+                      🚀 LOGIN WITH FORM (DEV)
+                    </ThemedText>
                   </TouchableOpacity>
                 )}
               </View>
@@ -305,11 +304,12 @@ const Login = () => {
           </View>
 
           <View className="flex w-full flex-1 items-center justify-center gap-8 bg-white px-8 pt-10">
-            <TouchableOpacity onPress={() => setUserType(userType === 'user' ? 'agent' : 'user')}>
+            <TouchableOpacity
+              onPress={() => setUserType(userType === 'agent' ? 'user' : 'agent')}>
               <View className="flex-row items-center justify-center gap-4">
                 <SwitchIcon />
                 <Text style={{ color: themeColors.primaryColor }}>
-                  Switch to {userType === 'user' ? 'agent' : 'user'}
+                  Switch to {userType === 'agent' ? 'user' : 'agent'}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -317,9 +317,9 @@ const Login = () => {
               <Text>Don't have an account?</Text>
               <TouchableOpacity
                 onPress={() =>
-                  userType === 'user'
-                    ? navigation.navigate('Signup')
-                    : navigation.navigate('AgentSignup')
+                  userType === 'agent'
+                    ? router.push('/(auth)/agent-signup')
+                    : router.push('/(auth)/signup')
                 }>
                 <Text style={{ color: themeColors.primaryColor }}>Register now</Text>
               </TouchableOpacity>

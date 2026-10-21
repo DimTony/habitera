@@ -19,13 +19,9 @@ import {
   View,
 } from 'react-native';
 import { Entypo } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
+import { useRouter } from 'expo-router';
 import { useAppStore } from 'stores/useAppStore';
 import LottieView from 'lottie-react-native';
-
-type ScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'MainTabs'>;
 
 interface SettingsItem {
   icon: React.ReactNode;
@@ -36,7 +32,7 @@ interface SettingsItem {
 }
 
 const AgentSettingsScreen = () => {
-  const navigation = useNavigation<ScreenNavigationProp>();
+  const router = useRouter();
   const { resetState } = useAppStore();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -51,31 +47,31 @@ const AgentSettingsScreen = () => {
     {
       icon: <UserIcon />,
       title: 'My Profile',
-      onPress: () => navigation.navigate('Profile'),
+      onPress: () => router.push('/(agent)/profile'),
       showChevron: true,
     },
     {
       icon: <BellIcon />,
       title: 'Alert Settings',
-      onPress: () => navigation.navigate('AlertSettings'),
+      onPress: () => router.push('/(agent)/alert-settings'),
       showChevron: true,
     },
     {
       icon: <LockIcon />,
       title: 'Change Password',
-      onPress: () => navigation.navigate('ChangePassword'),
+      onPress: () => router.push('/(agent)/change-password'),
       showChevron: true,
     },
     {
       icon: <InfoIcon />,
       title: 'About Us',
-      onPress: () => navigation.navigate('AboutUs'),
+      onPress: () => router.push('/(agent)/about'),
       showChevron: true,
     },
     {
       icon: <HeadphoneIcon />,
       title: 'Customer Support',
-      onPress: () => navigation.navigate('CustomerSupport'),
+      onPress: () => router.push('/(agent)/support'),
       showChevron: true,
     },
     {
@@ -108,7 +104,7 @@ const AgentSettingsScreen = () => {
 
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <BackArrow />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Settings</Text>

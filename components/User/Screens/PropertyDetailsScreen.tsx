@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BedIcon from 'components/Icons/BedIcon';
 import LocationIcon from 'components/Icons/LocationIcon';
 import ToiletIcon from 'components/Icons/ToiletIcon';
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { getErrorMessage } from 'lib/api/errors';
+import { getPropertyById } from 'lib/api/properties';
+import { mapPropertyDto, type AppProperty } from 'lib/properties/mapProperty';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -17,57 +19,153 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   ImageSourcePropType,
+  ActivityIndicator,
+  Modal,
+  Pressable,
 } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from 'stores/useAppStore';
+import { useToastStore } from 'stores/useToastStore';
 
-import { RootStackParamList } from '../types/navigation';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-type PropertyDetailsNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'PropertyDetails'
->;
-type PropertyDetailsRouteProp = RouteProp<RootStackParamList, 'PropertyDetails'>;
-
-interface PropertyDetailsScreenProps {
-  navigation: PropertyDetailsNavigationProp;
-  route: PropertyDetailsRouteProp;
-}
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const PropertyDetailsScreen: React.FC = () => {
-  const navigation = useNavigation<PropertyDetailsNavigationProp>();
-  const route = useRoute<PropertyDetailsRouteProp>();
-  const { propertyId, propertyName, location, bedrooms, bathrooms, price, imageSource, images } =
-    route.params;
-
-    // 678b83
-
-  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
-
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { themeColors } = useAppStore();
+  const { showToast } = useToastStore();
+  const [property, setProperty] = useState<AppProperty | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [fullscreenVisible, setFullscreenVisible] = useState(false);
+  const [fullscreenIndex, setFullscreenIndex] = useState(0);
+  const [mapSize, setMapSize] = useState<{ width: number; height: number } | null>(null);
+  const fullscreenScrollRef = useRef<ScrollView>(null);
 
-  const formatPrice = (price: number): string => {
-    return `₦${price.toLocaleString()}/Year`;
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      if (!id) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const result = await getPropertyById(id);
+        if (!active) return;
+
+        if (!result.success || !result.data) {
+          showToast({
+            type: 'error',
+            message: result.message || 'Unable to load property.',
+          });
+          setProperty(null);
+          return;
+        }
+
+        setProperty(mapPropertyDto(result.data));
+      } catch (error) {
+        if (!active) return;
+        showToast({
+          type: 'error',
+          message: getErrorMessage(error, 'Unable to load property.'),
+        });
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [id, showToast]);
+
+  const formatPrice = (price: number, currency: string, unit: string): string => {
+    return `${currency}${price.toLocaleString()}/${unit}`;
   };
 
-  const handleContactAgent = (): void => {
-    navigation.navigate('ContactOwner', { propertyId, propertyName });
-  };
+  const handleContactAgent = (): void => {};
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>): void => {
-    const slide = Math.ceil(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    const slide = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     if (slide !== currentImageIndex) {
       setCurrentImageIndex(slide);
     }
   };
+
+  const onFullscreenScroll = (event: NativeSyntheticEvent<NativeScrollEvent>): void => {
+    const slide = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    if (slide !== fullscreenIndex) {
+      setFullscreenIndex(slide);
+      setCurrentImageIndex(slide);
+    }
+  };
+
+  const openFullscreen = (index: number) => {
+    setFullscreenIndex(index);
+    setFullscreenVisible(true);
+    requestAnimationFrame(() => {
+      fullscreenScrollRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: false });
+    });
+  };
+
+  const closeFullscreen = () => {
+    setFullscreenVisible(false);
+  };
+
+  const hasValidCoordinates = useMemo(() => {
+    if (!property) return false;
+    const { latitude, longitude } = property.coordinates;
+    return (
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude) &&
+      !(latitude === 0 && longitude === 0)
+    );
+  }, [property]);
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator color={themeColors.primaryColor} />
+      </View>
+    );
+  }
+
+  if (!property) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.emptyText}>Property not found</Text>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
+          <Text style={{ color: themeColors.primaryColor, fontWeight: '600' }}>Go back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const {
+    propertyName,
+    location,
+    bedrooms,
+    bathrooms,
+    price,
+    currency,
+    priceUnit,
+    images,
+    description,
+    coordinates,
+  } = property;
+
+  const gallery = images?.length ? images : [property.imageSource];
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
-        {/* Image Carousel */}
         <View style={styles.imageSection}>
           <ScrollView
             horizontal
@@ -76,32 +174,41 @@ const PropertyDetailsScreen: React.FC = () => {
             onScroll={onScroll}
             scrollEventThrottle={16}
             style={styles.imageCarousel}>
-            {images.map((image, index) => (
-              <Image
-                key={index}
-                source={
-                  typeof image === 'object' && 'uri' in image
-                    ? image
-                    : (image as ImageSourcePropType)
-                }
-                style={styles.carouselImage}
-              />
+            {gallery.map((image, index) => (
+              <TouchableOpacity
+                key={`hero-${index}`}
+                activeOpacity={0.95}
+                onPress={() => openFullscreen(index)}>
+                <Image
+                  source={
+                    typeof image === 'object' && image && 'uri' in image
+                      ? image
+                      : (image as ImageSourcePropType)
+                  }
+                  style={styles.carouselImage}
+                />
+              </TouchableOpacity>
             ))}
           </ScrollView>
 
-          {/* Back Button */}
           <TouchableOpacity
             className="bg-white/50"
             style={styles.backButton}
-            onPress={() => navigation.goBack()}>
+            onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={20} color="#333" />
           </TouchableOpacity>
 
-          {/* Image Indicators */}
+          <TouchableOpacity
+            style={styles.expandButton}
+            onPress={() => openFullscreen(currentImageIndex)}
+            accessibilityLabel="View images full screen">
+            <Ionicons name="expand-outline" size={18} color="#333" />
+          </TouchableOpacity>
+
           <View style={styles.indicatorContainer}>
-            {images.map((_, index) => (
+            {gallery.map((_, index) => (
               <View
-                key={index}
+                key={`dot-${index}`}
                 style={[
                   styles.indicator,
                   index === currentImageIndex ? styles.activeIndicator : styles.inactiveIndicator,
@@ -111,18 +218,14 @@ const PropertyDetailsScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Content Section */}
         <View style={styles.contentSection} className="rounded-t-lg pt-20">
-          {/* Property Title */}
           <Text style={styles.propertyTitle}>{propertyName}</Text>
 
-          {/* Location */}
           <View style={styles.locationRow}>
             <LocationIcon color={themeColors.primaryColor} />
             <Text style={styles.locationText}>{location}</Text>
           </View>
 
-          {/* Property Details */}
           <View style={styles.detailsRow}>
             <View style={styles.detail}>
               <BedIcon color={themeColors.primaryColor} />
@@ -135,41 +238,68 @@ const PropertyDetailsScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Description Section */}
           <View style={styles.descSection} className="bg-[#678B830D]">
             <Text style={styles.sectionTitle}>Description</Text>
             <Text style={styles.descriptionText}>
-              This beautifully finished 2-bedroom, 2.5-bathroom apartment offers the perfect blend
-              of comfort, style, and convenience. Step into a spacious open-plan living and dining
-              area flooded with natural light, complete with sleek tiled flooring and contemporary
-              lighting. The fully fitted kitchen boasts granite countertops, high-end appliances,
-              and ample storage to realize your culinary needs.
+              {description || 'No description available for this property.'}
             </Text>
           </View>
 
-          {/* Google Location Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle} className="py-5">
-              Google Location
-            </Text>
-            <View style={styles.mapContainer}>
-              <Image
-                source={{ uri: 'https://via.placeholder.com/350x150/E8E8E8/666666?text=Map+View' }}
-                style={styles.mapImage}
-              />
+            <Text style={styles.sectionTitle}>Location</Text>
+            <View
+              style={styles.mapContainer}
+              onLayout={(event) => {
+                const { width, height } = event.nativeEvent.layout;
+                if (width > 0 && height > 0) {
+                  setMapSize({ width, height });
+                }
+              }}>
+              {hasValidCoordinates && mapSize ? (
+                <MapView
+                  style={{ width: mapSize.width, height: mapSize.height }}
+                  // Default provider: Apple Maps on iOS. Do not force Google without an API key.
+                  initialRegion={{
+                    latitude: coordinates.latitude,
+                    longitude: coordinates.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }}
+                  scrollEnabled={false}
+                  zoomEnabled={false}
+                  rotateEnabled={false}
+                  pitchEnabled={false}
+                  toolbarEnabled={false}
+                  mapType="standard">
+                  <Marker
+                    coordinate={{
+                      latitude: coordinates.latitude,
+                      longitude: coordinates.longitude,
+                    }}
+                    title={propertyName}
+                    description={location}
+                    tracksViewChanges={false}
+                  />
+                </MapView>
+              ) : (
+                <View style={styles.mapFallback}>
+                  <Ionicons name="map-outline" size={22} color="#888" />
+                  <Text style={styles.mapFallbackText}>
+                    {hasValidCoordinates ? 'Loading map…' : 'Map location unavailable'}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
-          {/* Bottom spacing for fixed button */}
           <View style={styles.bottomSpacing} />
         </View>
       </ScrollView>
 
-      {/* Fixed Bottom Section */}
       <View style={styles.bottomSection}>
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>Price</Text>
-          <Text style={styles.priceValue}>{formatPrice(price)}</Text>
+          <Text style={styles.priceValue}>{formatPrice(price, currency, priceUnit)}</Text>
         </View>
         <TouchableOpacity
           style={[styles.contactButton, { backgroundColor: themeColors.primaryColor }]}
@@ -177,6 +307,54 @@ const PropertyDetailsScreen: React.FC = () => {
           <Text style={styles.contactButtonText}>Contact Agent</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={fullscreenVisible}
+        animationType="fade"
+        presentationStyle="fullScreen"
+        onRequestClose={closeFullscreen}
+        statusBarTranslucent>
+        <View style={[styles.fullscreenContainer, { paddingTop: insets.top }]}>
+          <StatusBar barStyle="light-content" />
+          <View style={styles.fullscreenHeader}>
+            <Text style={styles.fullscreenCounter}>
+              {fullscreenIndex + 1} / {gallery.length}
+            </Text>
+            <TouchableOpacity
+              onPress={closeFullscreen}
+              style={styles.fullscreenClose}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Ionicons name="close" size={26} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            ref={fullscreenScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={onFullscreenScroll}
+            scrollEventThrottle={16}
+            contentOffset={{ x: fullscreenIndex * SCREEN_WIDTH, y: 0 }}>
+            {gallery.map((image, index) => (
+              <Pressable
+                key={`fs-${index}`}
+                style={styles.fullscreenPage}
+                onPress={closeFullscreen}>
+                <Image
+                  source={
+                    typeof image === 'object' && image && 'uri' in image
+                      ? image
+                      : (image as ImageSourcePropType)
+                  }
+                  style={styles.fullscreenImage}
+                  resizeMode="contain"
+                />
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -185,6 +363,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
   },
   scrollView: {
     flex: 1,
@@ -214,10 +400,25 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    // backgroundColor: '#fff',
-    // opacity: 0.5,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  expandButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.85)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -249,11 +450,6 @@ const styles = StyleSheet.create({
   contentSection: {
     flex: 1,
     paddingTop: 20,
-    // borderTopLeftRadius: 20,
-    // borderTopRightRadius: 20,
-    // minHeight: 500,
-    // marginTop: -15,
-    // backgroundColor: '#fff',
   },
   propertyTitle: {
     fontSize: 22,
@@ -313,11 +509,20 @@ const styles = StyleSheet.create({
   mapContainer: {
     borderRadius: 12,
     overflow: 'hidden',
+    height: 180,
+    backgroundColor: '#f0f0f0',
   },
-  mapImage: {
-    width: '100%',
-    height: 150,
-    borderRadius: 12,
+  mapFallback: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  mapFallbackText: {
+    fontSize: 13,
+    color: '#888',
+    textAlign: 'center',
   },
   bottomSpacing: {
     height: 100,
@@ -351,7 +556,6 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   contactButton: {
-    // backgroundColor: '#6B9B76',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -362,6 +566,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#fff',
     fontWeight: '600',
+  },
+  fullscreenContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  fullscreenHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+    zIndex: 2,
+  },
+  fullscreenCounter: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  fullscreenClose: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  fullscreenPage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT * 0.85,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fullscreenImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT * 0.8,
   },
 });
 

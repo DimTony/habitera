@@ -1,16 +1,13 @@
+import { useRouter } from 'expo-router';
 import { BackArrow } from 'components/Svg';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { useNavigation } from '@react-navigation/native';
 import { KeyboardAvoidingView, Platform, Text, TouchableOpacity, View } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
 import { StyleSheet } from 'react-native';
 
-type ScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'Profile'>;
 
 const AboutUs = () => {
-  const navigation = useNavigation<ScreenNavigationProp>();
+  const router = useRouter();
 
   return (
     <KeyboardAvoidingView
@@ -22,7 +19,7 @@ const AboutUs = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <BackArrow />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>About Us</Text>

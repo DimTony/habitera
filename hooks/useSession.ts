@@ -16,7 +16,7 @@ function useSession() {
         }
 
         setSession(null);
-        router.push('/login');
+        router.replace('/(auth)');
         return null;
     }
 

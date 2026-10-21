@@ -1,67 +1,107 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BedIcon from 'components/Icons/BedIcon';
 import LocationIcon from 'components/Icons/LocationIcon';
 import ToiletIcon from 'components/Icons/ToiletIcon';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
-import React, { useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { getErrorMessage } from 'lib/api/errors';
+import { deactivateProperty, getPropertyById } from 'lib/api/properties';
+import type { PropertyDto } from 'lib/api/types';
+import { mapPropertyDto, type AppProperty } from 'lib/properties/mapProperty';
+import React, { useCallback, useState } from 'react';
 import {
-  View,
-  Text,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
+  ActivityIndicator,
+  Alert,
   Dimensions,
-  StatusBar,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
+  Image,
   ImageSourcePropType,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useAppStore } from 'stores/useAppStore';
-
-
+import { useToastStore } from 'stores/useToastStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type PropertyDetailsNavigationProp = NativeStackNavigationProp<
-  AgentRootStackParamList,
-  'ViewProperty'
->;
-type PropertyDetailsRouteProp = RouteProp<AgentRootStackParamList, 'ViewProperty'>;
+type AgentPropertyView = AppProperty & {
+  status?: string | null;
+  isPublished?: boolean;
+  reviewSubmittedAt?: string | null;
+  rejectionReason?: string | null;
+};
 
-interface PropertyDetailsScreenProps {
-  navigation: PropertyDetailsNavigationProp;
-  route: PropertyDetailsRouteProp;
+function statusLabel(property: AgentPropertyView) {
+  const status = String(property.status ?? '').toLowerCase();
+  if (status === 'inactive') return 'Inactive';
+  if (status === 'pending') {
+    return property.reviewSubmittedAt ? 'Under review' : 'Draft';
+  }
+  if (property.isPublished && status === 'active') return 'Active';
+  return property.status || 'Unknown';
 }
 
 const ViewProperty: React.FC = () => {
-  const navigation = useNavigation<PropertyDetailsNavigationProp>();
-  const route = useRoute<PropertyDetailsRouteProp>();
-//   const { propertyId, propertyName, location, bedrooms, bathrooms, price, imageSource, images } =
-//     route.params;
-
-const propertyId = '1'
-const propertyName = 'Property Name';
-const location = '221B Baker Str';
-const bedrooms = '10';
-const bathrooms = '12';
-const price = 123000065;
-const imageSource = '1';
-const images = ['1'];
-
-
-  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
-
+  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { themeColors } = useAppStore();
+  const { showToast } = useToastStore();
 
-  const formatPrice = (price: number): string => {
-    return `₦${price.toLocaleString()}/Year`;
-  };
+  const [property, setProperty] = useState<AgentPropertyView | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  const handleContactAgent = (): void => {
-    // navigation.navigate('ContactOwner', { propertyId, propertyName });
+  const loadProperty = useCallback(async () => {
+    if (!id) {
+      setIsLoading(false);
+      setProperty(null);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const result = await getPropertyById(id);
+      if (!result.success || !result.data) {
+        showToast({
+          type: 'error',
+          message: result.message || 'Unable to load listing.',
+        });
+        setProperty(null);
+        return;
+      }
+
+      const dto: PropertyDto = result.data;
+      setProperty({
+        ...mapPropertyDto(dto),
+        status: dto.status,
+        isPublished: dto.isPublished,
+        reviewSubmittedAt: dto.reviewSubmittedAt,
+        rejectionReason: dto.rejectionReason,
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        message: getErrorMessage(error, 'Unable to load listing.'),
+      });
+      setProperty(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id, showToast]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadProperty();
+    }, [loadProperty])
+  );
+
+  const formatPrice = (item: AgentPropertyView): string => {
+    return `${item.currency}${item.price.toLocaleString()}/${item.priceUnit}`;
   };
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>): void => {
@@ -71,12 +111,82 @@ const images = ['1'];
     }
   };
 
+  const handleEdit = () => {
+    if (!id) return;
+    router.push(`/(agent)/edit-property?id=${id}`);
+  };
+
+  const handleMakeInactive = () => {
+    if (!id || !property) return;
+
+    const status = String(property.status ?? '').toLowerCase();
+    if (status === 'inactive') {
+      showToast({ type: 'info', message: 'This listing is already inactive.' });
+      return;
+    }
+
+    Alert.alert(
+      'Make inactive',
+      'This listing will be removed from the live feed. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Make inactive',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDeactivating(true);
+              const result = await deactivateProperty(id);
+              if (!result.success) {
+                showToast({
+                  type: 'error',
+                  message: result.message || 'Unable to deactivate listing.',
+                });
+                return;
+              }
+              showToast({ type: 'success', message: 'Listing marked inactive.' });
+              await loadProperty();
+            } catch (error) {
+              showToast({
+                type: 'error',
+                message: getErrorMessage(error, 'Unable to deactivate listing.'),
+              });
+            } finally {
+              setIsDeactivating(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator color={themeColors.primaryColor || '#000'} />
+      </View>
+    );
+  }
+
+  if (!property) {
+    return (
+      <View style={[styles.container, styles.centered, { paddingHorizontal: 24 }]}>
+        <Text style={styles.emptyTitle}>Listing unavailable</Text>
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => router.back()}>
+          <Text style={styles.secondaryButtonText}>Go back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const images = property.images?.length ? property.images : [property.imageSource];
+  const isInactive = String(property.status ?? '').toLowerCase() === 'inactive';
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
-        {/* Image Carousel */}
         <View style={styles.imageSection}>
           <ScrollView
             horizontal
@@ -87,9 +197,9 @@ const images = ['1'];
             style={styles.imageCarousel}>
             {images.map((image, index) => (
               <Image
-                key={index}
+                key={`${property.id}-${index}`}
                 source={
-                  typeof image === 'object' && 'uri' in image
+                  typeof image === 'object' && image && 'uri' in image
                     ? image
                     : (image as ImageSourcePropType)
                 }
@@ -98,19 +208,21 @@ const images = ['1'];
             ))}
           </ScrollView>
 
-          {/* Back Button */}
           <TouchableOpacity
             className="bg-white/50"
             style={styles.backButton}
-            onPress={() => navigation.goBack()}>
+            onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={20} color="#333" />
           </TouchableOpacity>
 
-          {/* Image Indicators */}
+          <View style={styles.statusChip}>
+            <Text style={styles.statusChipText}>{statusLabel(property)}</Text>
+          </View>
+
           <View style={styles.indicatorContainer}>
             {images.map((_, index) => (
               <View
-                key={index}
+                key={`dot-${index}`}
                 style={[
                   styles.indicator,
                   index === currentImageIndex ? styles.activeIndicator : styles.inactiveIndicator,
@@ -120,69 +232,79 @@ const images = ['1'];
           </View>
         </View>
 
-        {/* Content Section */}
         <View style={styles.contentSection} className="rounded-t-lg pt-20">
-          {/* Property Title */}
-          <Text style={styles.propertyTitle}>{propertyName}</Text>
+          <Text style={styles.propertyTitle}>{property.propertyName}</Text>
 
-          {/* Location */}
           <View style={styles.locationRow}>
             <LocationIcon color="#678b83" />
-            <Text style={styles.locationText}>{location}</Text>
+            <Text style={styles.locationText}>{property.location}</Text>
           </View>
 
-          {/* Property Details */}
           <View style={styles.detailsRow}>
             <View style={styles.detail}>
               <BedIcon color="#678b83" />
-              <Text style={styles.detailText}>{bedrooms} Bedrooms</Text>
+              <Text style={styles.detailText}>{property.bedrooms} Bedrooms</Text>
             </View>
 
             <View style={styles.detail}>
               <ToiletIcon color="#678b83" />
-              <Text style={styles.detailText}>{bathrooms} Bathrooms</Text>
+              <Text style={styles.detailText}>{property.bathrooms} Bathrooms</Text>
             </View>
           </View>
 
-          {/* Description Section */}
+          {property.rejectionReason ? (
+            <View style={[styles.descSection, { backgroundColor: '#FFF4F4' }]}>
+              <Text style={styles.sectionTitle}>Rejection reason</Text>
+              <Text style={styles.descriptionText}>{property.rejectionReason}</Text>
+            </View>
+          ) : null}
+
           <View style={styles.descSection} className="bg-[#678B830D]">
             <Text style={styles.sectionTitle}>Description</Text>
             <Text style={styles.descriptionText}>
-              This beautifully finished 2-bedroom, 2.5-bathroom apartment offers the perfect blend
-              of comfort, style, and convenience. Step into a spacious open-plan living and dining
-              area flooded with natural light, complete with sleek tiled flooring and contemporary
-              lighting. The fully fitted kitchen boasts granite countertops, high-end appliances,
-              and ample storage to realize your culinary needs.
+              {property.description?.trim() || 'No description provided.'}
             </Text>
           </View>
 
-          {/* Google Location Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle} className="py-5">
-              Google Location
+              Location
             </Text>
             <View style={styles.mapContainer}>
-              <Image
-                source={{ uri: 'https://via.placeholder.com/350x150/E8E8E8/666666?text=Map+View' }}
-                style={styles.mapImage}
-              />
+              <Text style={styles.coordsText}>
+                {property.coordinates.latitude.toFixed(5)},{' '}
+                {property.coordinates.longitude.toFixed(5)}
+              </Text>
             </View>
           </View>
 
-          {/* Bottom spacing for fixed button */}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[styles.secondaryButton, isInactive && styles.disabledButton]}
+              onPress={handleMakeInactive}
+              disabled={isDeactivating || isInactive}>
+              {isDeactivating ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={styles.secondaryButtonText}>
+                  {isInactive ? 'Already inactive' : 'Make inactive'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.bottomSpacing} />
         </View>
       </ScrollView>
 
-      {/* Fixed Bottom Section */}
       <View style={styles.bottomSection}>
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>Price</Text>
-          <Text style={styles.priceValue}>{formatPrice(price)}</Text>
+          <Text style={styles.priceValue}>{formatPrice(property)}</Text>
         </View>
         <TouchableOpacity
-          style={[styles.contactButton, { backgroundColor: themeColors.primaryColor }]}
-          onPress={handleContactAgent}>
+          style={[styles.contactButton, { backgroundColor: themeColors.primaryColor || '#000' }]}
+          onPress={handleEdit}>
           <Text style={styles.contactButtonText}>Edit Listing</Text>
         </TouchableOpacity>
       </View>
@@ -194,6 +316,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontFamily: 'Bahnschrift',
+    fontSize: 18,
+    marginBottom: 16,
+    color: '#333',
   },
   scrollView: {
     flex: 1,
@@ -223,8 +355,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    // backgroundColor: '#fff',
-    // opacity: 0.5,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -232,6 +362,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  statusChip: {
+    position: 'absolute',
+    top: 54,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  statusChipText: {
+    color: '#fff',
+    fontSize: 12,
+    fontFamily: 'Bahnschrift',
   },
   indicatorContainer: {
     position: 'absolute',
@@ -258,11 +402,6 @@ const styles = StyleSheet.create({
   contentSection: {
     flex: 1,
     paddingTop: 20,
-    // borderTopLeftRadius: 20,
-    // borderTopRightRadius: 20,
-    // minHeight: 500,
-    // marginTop: -15,
-    // backgroundColor: '#fff',
   },
   propertyTitle: {
     fontSize: 22,
@@ -299,7 +438,6 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 13,
     color: '#666',
-    // fontWeight: '500',
     fontFamily: 'Bahnschrift',
   },
   section: {
@@ -327,14 +465,37 @@ const styles = StyleSheet.create({
   mapContainer: {
     borderRadius: 12,
     overflow: 'hidden',
+    backgroundColor: '#f4f4f4',
+    padding: 16,
   },
-  mapImage: {
-    width: '100%',
-    height: 150,
+  coordsText: {
+    fontFamily: 'Bahnschrift',
+    color: '#666',
+    fontSize: 13,
+  },
+  actionsRow: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: '#000',
     borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  secondaryButtonText: {
+    fontFamily: 'Bahnschrift',
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   bottomSpacing: {
-    height: 100,
+    height: 120,
   },
   bottomSection: {
     position: 'absolute',
@@ -370,7 +531,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Bahnschrift',
   },
   contactButton: {
-    // backgroundColor: '#000000',
     paddingHorizontal: 24,
     paddingVertical: 18,
     borderRadius: 8,

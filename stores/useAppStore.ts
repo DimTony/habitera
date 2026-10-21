@@ -26,7 +26,8 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       // Initial state
       user: null,
-      userType: null,
+      // Default to seeker so auth entry points don't fall through to agent signup.
+      userType: 'user',
       isAuthenticated: false,
       hasCompletedOnboarding: false,
       themeColors: createThemeColors(null), // Initialize with default theme
@@ -51,15 +52,29 @@ export const useAppStore = create<AppState>()(
       resetState: () =>
         set({
           user: null,
-          userType: null,
+          userType: 'user',
           isAuthenticated: false,
           hasCompletedOnboarding: false,
-          themeColors: createThemeColors(null),
+          themeColors: createThemeColors('user'),
         }),
     }),
     {
       name: 'app-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      // Functions like bgColor cannot survive JSON persistence.
+      partialize: (state) => ({
+        user: state.user,
+        userType: state.userType,
+        isAuthenticated: state.isAuthenticated,
+        hasCompletedOnboarding: state.hasCompletedOnboarding,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        if (state.userType !== 'user' && state.userType !== 'agent') {
+          state.userType = 'user';
+        }
+        state.themeColors = createThemeColors(state.userType);
+      },
     }
   )
 );

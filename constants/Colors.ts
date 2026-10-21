@@ -18,5 +18,7 @@ export default {
   },
 };
 
+import { API_BASE_URL } from 'lib/api/config';
+
 export const SubscriptionKey = '5c9f74a1892843dbb6d9af06ce0e86b4';
-export const BaseUrl = 'http://172.20.10.6:3000';
+export const BaseUrl = API_BASE_URL;

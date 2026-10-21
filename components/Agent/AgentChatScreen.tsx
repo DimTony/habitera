@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { BackArrow } from 'components/Svg';
 import { StatusBar } from 'expo-status-bar';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -14,36 +14,9 @@ import {
   Image,
   FlatList,
 } from 'react-native';
-// Import CompositeNavigationProp to handle nested navigation
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import LottieView from 'lottie-react-native';
 import { FLOATING_BUTTON_SPACE } from './AgentHomeScreen';
 import { formatUTCTo12Hour } from 'lib/helpers';
-
-// Define your navigation types (add these to your types file)
-type TabParamList = {
-  Home: undefined;
-  Chat: undefined;
-  Settings: undefined;
-};
-
-type RootStackParamList = {
-  MainTabs: undefined;
-  Chat: {
-    chatId: string;
-    // Add other params as needed
-  };
-  AddProperty: undefined;
-  ViewProperty: undefined;
-};
-
-// Use CompositeNavigationProp to properly handle nested navigation
-type ScreenNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<TabParamList, 'Chat'>,
-  NativeStackNavigationProp<RootStackParamList>
->;
 
 interface Chat {
   id: string;
@@ -55,7 +28,7 @@ interface Chat {
 }
 
 const AgentChatScreen = () => {
-  const navigation = useNavigation();
+  const router = useRouter();
   const [showChats, setShowChats] = useState(true);
 
   const mockChats: Chat[] = [
@@ -83,21 +56,7 @@ const AgentChatScreen = () => {
   const handleChatPress = (chat: Chat) => {
     console.log('PRESSED');
 
-    // Navigate to the Stack Navigator's Chat screen
-    // Use getParent() to access the parent Stack Navigator
-    const parentNavigation = navigation.getParent();
-
-    if (parentNavigation) {
-      parentNavigation.navigate('Chat', {
-        chatId: chat.id,
-        // Add other params as needed
-      });
-    } else {
-      // Fallback: try direct navigation (might work in some setups)
-      navigation.navigate('Chat' as any, {
-        chatId: chat.id,
-      });
-    }
+    router.push({ pathname: '/(agent)/conversation', params: { chatId: chat.id } });
   };
 
   // Rest of your component remains the same...
@@ -171,7 +130,7 @@ const AgentChatScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <BackArrow />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chat</Text>

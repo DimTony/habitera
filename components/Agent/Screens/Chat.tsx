@@ -1,7 +1,7 @@
+import { useRouter } from 'expo-router';
 import React, { useState, useRef, useEffect } from 'react';
 import { BackArrow } from 'components/Svg';
 import { StatusBar } from 'expo-status-bar';
-import { useNavigation } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -14,12 +14,9 @@ import {
   TextInput,
   Keyboard,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
 import { formatUTCTo12Hour } from 'lib/helpers';
 import Feather from '@expo/vector-icons/Feather';
 
-type ScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'Chat'>;
 
 interface Message {
   id: string;
@@ -29,7 +26,7 @@ interface Message {
 }
 
 const ChatScreen = () => {
-  const navigation = useNavigation<ScreenNavigationProp>();
+  const router = useRouter();
   const [message, setMessage] = useState('');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const flatListRef = useRef<FlatList>(null);
@@ -155,7 +152,7 @@ const ChatScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <BackArrow />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chat</Text>

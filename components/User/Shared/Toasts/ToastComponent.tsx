@@ -20,10 +20,11 @@ interface ToastComponentProps {
 }
 
 const { width } = Dimensions.get('window');
-const TOAST_HEIGHT = 50;
+const TOAST_MIN_HEIGHT = 52;
+const TOAST_STACK_HEIGHT = 72;
 const TOAST_MARGIN = 8;
 const ICON_SIZE = 40;
-const FULL_WIDTH = width * 0.50; // Reduced width - 75% of screen
+const FULL_WIDTH = width * 0.92;
 
 const ToastComponent: React.FC<ToastComponentProps> = ({ toast, onHide, index }) => {
   const scaleXAnim = useRef(new Animated.Value(ICON_SIZE / FULL_WIDTH)).current;
@@ -127,9 +128,10 @@ const ToastComponent: React.FC<ToastComponentProps> = ({ toast, onHide, index })
     }
   };
 
-  const topOffset = Platform.OS === 'ios' 
-    ? (StatusBar.currentHeight || 44) + 20 + (index * (TOAST_HEIGHT + TOAST_MARGIN))
-    : (StatusBar.currentHeight || 24) + 20 + (index * (TOAST_HEIGHT + TOAST_MARGIN));
+  const topOffset =
+    Platform.OS === 'ios'
+      ? (StatusBar.currentHeight || 44) + 20 + index * (TOAST_STACK_HEIGHT + TOAST_MARGIN)
+      : (StatusBar.currentHeight || 24) + 20 + index * (TOAST_STACK_HEIGHT + TOAST_MARGIN);
 
   return (
     <Animated.View
@@ -140,43 +142,31 @@ const ToastComponent: React.FC<ToastComponentProps> = ({ toast, onHide, index })
           top: topOffset,
           width: FULL_WIDTH,
           opacity: opacityAnim,
-          transform: [
-            { scale: scaleAnim },
-            { scaleX: scaleXAnim }
-          ],
+          transform: [{ scale: scaleAnim }, { scaleX: scaleXAnim }],
         },
-      ]}
-    >
+      ]}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons 
-            name={getIcon()} 
-            size={20} 
-            color="white"
-          />
+          <Ionicons name={getIcon()} size={20} color="white" />
         </View>
-        
+
         <Animated.View style={[styles.textContainer, { opacity: textOpacityAnim }]}>
-          <Text style={styles.message} numberOfLines={1}>
+          <Text style={styles.message} numberOfLines={4}>
             {toast.message}
           </Text>
-          
+
           {toast.action && (
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={toast.action.onPress}
-            >
+            <TouchableOpacity style={styles.actionButton} onPress={toast.action.onPress}>
               <Text style={styles.actionText}>{toast.action.label}</Text>
             </TouchableOpacity>
           )}
         </Animated.View>
-        
+
         <Animated.View style={[styles.closeButtonContainer, { opacity: textOpacityAnim }]}>
           <TouchableOpacity
             style={styles.closeButton}
             onPress={hideToast}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="close" size={16} color="white" />
           </TouchableOpacity>
         </Animated.View>
@@ -188,8 +178,8 @@ const ToastComponent: React.FC<ToastComponentProps> = ({ toast, onHide, index })
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    height: TOAST_HEIGHT,
-    borderRadius: 25,
+    minHeight: TOAST_MIN_HEIGHT,
+    borderRadius: 18,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -200,13 +190,14 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 9999,
     alignSelf: 'center',
-    left: (width - FULL_WIDTH) / 2, // Center the toast properly
+    left: (width - FULL_WIDTH) / 2,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: '100%',
-    paddingHorizontal: 4,
+    minHeight: TOAST_MIN_HEIGHT,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
   },
   iconContainer: {
     width: ICON_SIZE - 8,
@@ -216,6 +207,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 4,
+    alignSelf: 'flex-start',
+    marginTop: 2,
   },
   textContainer: {
     flex: 1,
@@ -226,7 +219,9 @@ const styles = StyleSheet.create({
   },
   message: {
     flex: 1,
+    flexShrink: 1,
     fontSize: 13,
+    lineHeight: 18,
     color: 'white',
     fontWeight: '500',
   },
@@ -244,6 +239,8 @@ const styles = StyleSheet.create({
   },
   closeButtonContainer: {
     marginRight: 4,
+    alignSelf: 'flex-start',
+    marginTop: 4,
   },
   closeButton: {
     width: 24,

@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Image,
@@ -13,8 +14,6 @@ import {
   View,
   Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import LottieView from 'lottie-react-native';
 
 // Components (these would be imported from your components folder)
@@ -22,7 +21,6 @@ import { ThemedText } from 'components/ThemedText';
 import { BackArrow, CaretDown, UploadIcon } from 'components/Svg';
 import LibraryDatePicker from '../UI/DatePicker';
 import { useAppStore } from 'stores/useAppStore';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
 import { generateStableGradientPair } from 'lib/helpers';
 
 // Constants
@@ -93,7 +91,6 @@ interface FormData {
   description: string;
 }
 
-type HomeScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'AddAlert'>;
 
 // Dropdown Component
 const Dropdown: React.FC<DropdownProps> = ({
@@ -265,7 +262,7 @@ const TabButton = React.memo(
 // Main Component
 const AddAlert = () => {
   const { user } = useAppStore();
-  const navigation = useNavigation<HomeScreenNavigationProp>();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'For Rent' | 'For Sale'>('For Rent');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -332,7 +329,7 @@ const AddAlert = () => {
 
   const handleCloseModal = useCallback(() => {
     setShowSuccessModal(false);
-    navigation.goBack();
+    router.back();
   }, [navigation]);
 
   return (
@@ -343,7 +340,7 @@ const AddAlert = () => {
       <View style={styles.header}>
         <View style={styles.profileSection}>
           <View style={styles.profileInfo}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <BackArrow />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Add Alert</Text>

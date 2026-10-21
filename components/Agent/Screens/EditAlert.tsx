@@ -15,15 +15,11 @@ import { TouchableOpacity } from 'react-native';
 import { StyleSheet, Text } from 'react-native';
 import { View } from 'react-native';
 import { useAppStore } from 'stores/useAppStore';
-import { useNavigation } from '@react-navigation/native';
 import EvilIcons from '@expo/vector-icons/EvilIcons';
 import { BackArrow, CaretDown, Edit, MailIcon, PhoneIncoming, UploadIcon } from 'components/Svg';
 import LibraryDatePicker from '../UI/DatePicker';
 import { Platform } from 'react-native';
-import { navigate } from 'expo-router/build/global-state/routing';
 import { useRouter } from 'expo-router';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
 import LottieView from 'lottie-react-native';
 
 const propertyTypes = ['Residential', 'Commercial', 'Industrial', 'Land', 'Mixed Use'];
@@ -260,12 +256,11 @@ interface FormData {
   description: string;
 }
 
-type HomeScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'EditAlert'>;
 
 const EditAlert = () => {
   const { user, resetState } = useAppStore();
   const [activeTab, setActiveTab] = useState<'For Rent' | 'For Sale'>('For Rent');
-  const navigation = useNavigation<HomeScreenNavigationProp>();
+  const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
 
   // Form state
@@ -356,7 +351,7 @@ const EditAlert = () => {
 
   const handleCloseModal = () => {
     setShowEditModal(false);
-    navigation.popTo('AlertSettings');
+    router.back();
   };
 
   return (
@@ -368,7 +363,7 @@ const EditAlert = () => {
         <View style={styles.header}>
           <View style={styles.profileSection}>
             <View style={styles.profileInfo}>
-              <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                 <BackArrow />
               </TouchableOpacity>
 

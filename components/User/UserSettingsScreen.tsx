@@ -3,14 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAppStore } from 'stores/useAppStore';
 
 import TabsLayout from './TabsLayout';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from './types/navigation';
-import { useNavigation } from '@react-navigation/native';
 import { useToastStore } from 'stores/useToastStore';
+import { useRouter } from 'expo-router';
 
 const UserSettingsScreen = () => {
-  type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'MainTabs'>;
-  const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const router = useRouter();
 
   const { resetState } = useAppStore();
   const { showToast } = useToastStore();
@@ -20,7 +17,7 @@ const UserSettingsScreen = () => {
       id: 1,
       title: 'My Profile',
       icon: 'person-outline',
-      onPress: () => navigation.navigate('Profile'),
+      onPress: () => router.push('/(user)/profile'),
     },
     {
       id: 2,
@@ -37,7 +34,7 @@ const UserSettingsScreen = () => {
       id: 3,
       title: 'Change Password',
       icon: 'lock-closed-outline',
-      onPress: () => navigation.navigate('ChangePassword'),
+      onPress: () => router.push('/(user)/change-password'),
     },
     {
       id: 4,

@@ -1,30 +1,54 @@
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList } from 'components/Navigation/AuthNavigator';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Formik } from 'formik';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { forgotPassword } from 'lib/api/auth';
+import { getErrorMessage } from 'lib/api/errors';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from 'stores/useAppStore';
+import { useToastStore } from 'stores/useToastStore';
 import * as Yup from 'yup';
 
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
-
-const LoginSchema = Yup.object().shape({
+const ForgotSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email').required('Email is required'),
 });
 
 const ForgotPassword = () => {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const router = useRouter();
   const { themeColors } = useAppStore();
+  const { showToast } = useToastStore();
 
-  const handleReset = (values: { email: string }) => {
-    // Here you would normally call an API to authenticate the user
-    console.log('Form values:', values);
+  const handleReset = async (values: { email: string }) => {
+    try {
+      const result = await forgotPassword({ email: values.email.trim() });
 
-    // Mock login success
-    // In a real app, you'd call your authentication API here
-    navigation.navigate('EmailOTP');
+      if (!result.success) {
+        showToast({ type: 'error', message: result.message || 'Unable to start password reset.' });
+        return;
+      }
+
+      showToast({
+        type: 'success',
+        message: result.message || 'If an account exists, a reset code has been sent.',
+      });
+      router.push({
+        pathname: '/(auth)/reset-password',
+        params: { email: values.email.trim() },
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        message: getErrorMessage(error, 'Unable to start password reset.'),
+      });
+    }
   };
 
   const FormField = ({
@@ -50,6 +74,7 @@ const ForgotPassword = () => {
         onBlur={handleBlur(field)}
         keyboardType={keyboardType}
         autoCapitalize={field === 'email' ? 'none' : 'words'}
+        autoCorrect={false}
       />
       {touched[field] && errors[field] && (
         <Text style={[styles.errorText, { color: '#FF3B30' }]}>{errors[field]}</Text>
@@ -71,7 +96,6 @@ const ForgotPassword = () => {
           <Text className="px-8 text-sm text-white">Confirm email address to reset password</Text>
         </SafeAreaView>
 
-        {/* White content area with rounded top corners */}
         <View
           style={{
             flex: 1,
@@ -85,7 +109,7 @@ const ForgotPassword = () => {
             initialValues={{
               email: '',
             }}
-            validationSchema={LoginSchema}
+            validationSchema={ForgotSchema}
             onSubmit={handleReset}>
             {({
               handleChange,
@@ -96,6 +120,7 @@ const ForgotPassword = () => {
               touched,
               isValid,
               dirty,
+              isSubmitting,
             }) => (
               <View className="mt-10">
                 <FormField
@@ -120,21 +145,24 @@ const ForgotPassword = () => {
                           ? themeColors.bgColor(0.5)
                           : '#E2E2E2',
                   }}
-                  disabled={!(isValid && dirty)}
+                  disabled={!(isValid && dirty) || isSubmitting}
                   onPress={() => handleSubmit()}>
-                  <Text className="text-lg font-bold text-white">Reset Password</Text>
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text className="text-lg font-bold text-white">Reset Password</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             )}
           </Formik>
 
           <View className="mb-6 mt-10 flex w-full items-center justify-center">
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPress={() => router.back()}>
               <Text style={{ color: themeColors.primaryColor }}>Back to login</Text>
             </TouchableOpacity>
           </View>
 
-          {/* This empty view ensures the white background extends to fill the screen */}
           <View style={{ flex: 1 }} />
         </View>
       </ScrollView>
@@ -172,15 +200,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 2,
     marginLeft: 5,
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    paddingRight: 10,
-  },
-  eyeIcon: {
-    padding: 5,
   },
 });
 

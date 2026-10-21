@@ -66,16 +66,16 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
     <View className="flex-1 items-center justify-center bg-[#5f8179]">
       <View className="flex-row items-center">
         <Animated.View style={{ opacity: logoOpacity }}>
-          <LogoIcon width={32} height={33} fill="#FFFFFF" />
+          <LogoIcon width={48} height={50} fill="#FFFFFF" />
         </Animated.View>
 
         <Animated.View
           style={{
-            marginLeft: 8,
+            marginLeft: 12,
             opacity: textOpacity,
             transform: [{ translateX: textPosition }],
           }}>
-          <Animated.Text className="text-2xl font-medium text-white">Habitera</Animated.Text>
+          <Animated.Text className="text-4xl font-medium text-white">Habitera</Animated.Text>
         </Animated.View>
       </View>
     </View>

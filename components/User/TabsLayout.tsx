@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
 import { ReactNode } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 interface TabsLayoutProps {
   tabName: string;
   onBack?: () => void;
@@ -11,7 +10,7 @@ interface TabsLayoutProps {
 const TabsLayout = ({ tabName, onBack, children }: TabsLayoutProps) => {
   return (
     <View style={styles.container}>
-      <StatusBar style="dark" backgroundColor="#8A8A8A80" />
+      <StatusBar barStyle="dark-content" backgroundColor="#8A8A8A80" />
 
       {/* Header */}
       <View style={styles.header}>

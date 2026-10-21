@@ -37,6 +37,7 @@ interface PropertyCardProps {
   priceUnit?: string;
   currency?: string;
   imageSource: ImageSourcePropType;
+  distanceLabel?: string;
   isBookmarked?: boolean;
   onBookmarkPress?: () => void;
   onCardPress?: () => void;
@@ -52,6 +53,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   priceUnit = 'Year',
   currency = '₦',
   imageSource,
+  distanceLabel,
   isBookmarked = false,
   onBookmarkPress,
   onCardPress,
@@ -90,9 +92,12 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         </Text>
         <View className="flex-row items-start gap-1">
           <LocationIcon />
-          <Text className="text-[8px] text-[#818181]" style={locationText}>
+          <Text className="flex-1 text-[8px] text-[#818181]" style={locationText}>
             {location}
           </Text>
+          {distanceLabel ? (
+            <Text className="text-[9px] font-semibold text-[#6B9B76]">{distanceLabel}</Text>
+          ) : null}
         </View>
         <View className="flex-row items-center gap-2">
           {bedrooms && (

@@ -1,113 +1,165 @@
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList } from 'components/Navigation/AuthNavigator';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState, useRef, useEffect } from 'react';
+import { resendVerification, verifyEmail } from 'lib/api/auth';
+import { getErrorMessage } from 'lib/api/errors';
+import { persistAuthSession } from 'lib/auth/session';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from 'stores/useAppStore';
+import { useToastStore } from 'stores/useToastStore';
 
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'EmailOTP'>;
+const CODE_LENGTH = 6;
 
 const EmailOTP = () => {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { themeColors } = useAppStore();
-
-  // State for OTP inputs
-  const [otp, setOtp] = useState(['', '', '', '']);
-  // Timer for OTP expiration
-  const [timer, setTimer] = useState(60); // 60 seconds
-
-  // References for OTP input fields to enable auto-focus
+  const router = useRouter();
+  const { email: emailParam, purpose, role } = useLocalSearchParams<{
+    email?: string;
+    purpose?: string;
+    role?: string;
+  }>();
+  const email = typeof emailParam === 'string' ? emailParam : '';
+  const roleHint =
+    role === 'agent' || role === 'user' ? role : undefined;
+  const { themeColors, userType } = useAppStore();
+  const { showToast } = useToastStore();
+  const [otp, setOtp] = useState(Array(CODE_LENGTH).fill(''));
+  const [timer, setTimer] = useState(60);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const otpInputs = useRef<Array<TextInput | null>>([]);
 
-  // Handle OTP input change
+  useEffect(() => {
+    if (!email) {
+      showToast({ type: 'error', message: 'Missing email. Please sign up again.' });
+      router.replace('/(auth)');
+    }
+  }, [email, router, showToast]);
+
+  useEffect(() => {
+    if (timer <= 0) return;
+
+    const interval = setInterval(() => {
+      setTimer((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timer]);
+
   const handleOtpChange = (text: string, index: number) => {
-    if (text.length > 1) {
-      // If pasting the whole code
-      const otpArray = text.split('').slice(0, 4);
-      const newOtp = [...otp];
+    const digits = text.replace(/\D/g, '');
+    const next = [...otp];
 
-      otpArray.forEach((digit, idx) => {
-        if (idx < 4) {
-          newOtp[index + idx] = digit;
-        }
-      });
+    if (digits.length > 1) {
+      digits
+        .slice(0, CODE_LENGTH - index)
+        .split('')
+        .forEach((digit, offset) => {
+          next[index + offset] = digit;
+        });
+      setOtp(next);
+      otpInputs.current[Math.min(index + digits.length, CODE_LENGTH - 1)]?.focus();
+      return;
+    }
 
-      setOtp(newOtp);
+    next[index] = digits;
+    setOtp(next);
 
-      // Focus on the last input or move to next empty input
-      const nextIndex = Math.min(index + otpArray.length, 4);
-      otpInputs.current[nextIndex]?.focus();
-    } else {
-      // For single digit input
-      const newOtp = [...otp];
-      newOtp[index] = text;
-      setOtp(newOtp);
-
-      // Auto focus to next input if current input is filled
-      if (text !== '' && index < 3) {
-        otpInputs.current[index + 1]?.focus();
-      }
+    if (digits && index < CODE_LENGTH - 1) {
+      otpInputs.current[index + 1]?.focus();
     }
   };
 
-  // Handle backspace key press
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace' && otp[index] === '' && index > 0) {
-      // Move focus to previous input if current is empty and backspace is pressed
+  const handleKeyPress = (key: string, index: number) => {
+    if (key === 'Backspace' && otp[index] === '' && index > 0) {
       otpInputs.current[index - 1]?.focus();
     }
   };
 
-  // Handle verify button press
-  const handleVerify = () => {
-    const otpCode = otp.join('');
-    console.log('Verifying OTP:', otpCode);
-    // Here you would normally validate the OTP with your API
-    // If successful, navigate to the next screen
-    // For now, we'll just navigate to the next screen for demonstration
-    navigation.navigate('Login'); // Replace with your next screen
-  };
+  const handleVerify = async () => {
+    const code = otp.join('');
+    if (!email || code.length !== CODE_LENGTH) return;
 
-  // Handle resend code
-  const handleResend = () => {
-    // Reset the OTP inputs
-    setOtp(['', '', '', '', '']);
-    // Reset the timer
-    setTimer(60);
-    // Focus on the first input
-    otpInputs.current[0]?.focus();
-    // Here you would call your API to resend the OTP
-    console.log('Resending OTP code');
-  };
-
-  // Timer countdown effect
-  useEffect(() => {
-    if (timer > 0) {
-      const interval = setInterval(() => {
-        setTimer((prevTimer) => prevTimer - 1);
-      }, 1000);
-
-      return () => clearInterval(interval);
+    if (purpose === 'reset') {
+      router.push({
+        pathname: '/(auth)/reset-password',
+        params: { email, code },
+      });
+      return;
     }
-  }, [timer]);
 
-  // Format timer to MM:SS
+    try {
+      setIsSubmitting(true);
+      const result = await verifyEmail({ email, code });
+
+      if (!result.success || !result.data?.token) {
+        showToast({ type: 'error', message: result.message || 'Invalid verification code.' });
+        return;
+      }
+
+      await persistAuthSession({
+        token: result.data.token,
+        refreshToken: result.data.refreshToken,
+        user: result.data.user,
+        fallbackUserType: roleHint ?? userType,
+      });
+      showToast({
+        type: 'success',
+        message: result.message || 'Email verified. You are signed in.',
+      });
+      // Root Stack.Protected routes by userType after auth flips.
+    } catch (error) {
+      showToast({
+        type: 'error',
+        message: getErrorMessage(error, 'Invalid verification code.'),
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email || timer > 0 || isResending) return;
+
+    try {
+      setIsResending(true);
+      const result = await resendVerification({ email });
+      if (!result.success) {
+        showToast({ type: 'error', message: result.message || 'Unable to resend code.' });
+        return;
+      }
+
+      setOtp(Array(CODE_LENGTH).fill(''));
+      setTimer(60);
+      otpInputs.current[0]?.focus();
+      showToast({
+        type: 'success',
+        message: result.message || 'A new code has been sent.',
+      });
+    } catch (error) {
+      showToast({ type: 'error', message: getErrorMessage(error, 'Unable to resend code.') });
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
+
+  const isComplete = otp.every((digit) => digit !== '');
 
   return (
     <KeyboardAvoidingView
@@ -129,10 +181,11 @@ const EmailOTP = () => {
               <Text className="text-4xl text-white">Email OTP</Text>
               <Text className="text-4xl text-white">Verification</Text>
             </View>
-            <Text className="px-8 text-sm text-white">Check your email for verification code</Text>
+            <Text className="px-8 text-sm text-white">
+              Enter the 6-digit code sent to {email || 'your email'}
+            </Text>
           </SafeAreaView>
 
-          {/* White content area with rounded top corners */}
           <View
             style={{
               flex: 1,
@@ -142,49 +195,56 @@ const EmailOTP = () => {
               minHeight: 500,
             }}
             className="-mt-12 p-6 pt-6">
-            {/* OTP Input Section */}
             <View style={styles.otpContainer}>
               <Text style={styles.otpLabel}>OTP Code</Text>
               <View style={styles.otpInputContainer}>
                 {otp.map((digit, index) => (
                   <TextInput
                     key={index}
-                    ref={(ref) => (otpInputs.current[index] = ref)}
+                    ref={(ref) => {
+                      otpInputs.current[index] = ref;
+                    }}
                     style={styles.otpInput}
                     value={digit}
                     onChangeText={(text) => handleOtpChange(text, index)}
-                    onKeyPress={(e) => handleKeyPress(e, index)}
+                    onKeyPress={(e) => handleKeyPress(e.nativeEvent.key, index)}
                     keyboardType="number-pad"
-                    maxLength={5}
+                    maxLength={CODE_LENGTH}
                     textAlign="center"
                     selectTextOnFocus
                   />
                 ))}
               </View>
               <Text style={styles.timerText}>Code expires in {formatTime(timer)}</Text>
-              <TouchableOpacity onPress={handleResend}>
-                <Text style={[styles.resendText, { color: themeColors.primaryColor }]}>
-                  Resend code
+              <TouchableOpacity onPress={handleResend} disabled={timer > 0 || isResending}>
+                <Text
+                  style={[
+                    styles.resendText,
+                    {
+                      color: timer > 0 ? '#9CA3AF' : themeColors.primaryColor,
+                    },
+                  ]}>
+                  {isResending ? 'Sending...' : 'Resend code'}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Verify Button */}
             <TouchableOpacity
               style={[
                 styles.verifyButton,
                 {
-                  backgroundColor: otp.every((digit) => digit !== '')
-                    ? themeColors.primaryColor
-                    : '#E2E2E2',
+                  backgroundColor: isComplete ? themeColors.primaryColor : '#E2E2E2',
                 },
               ]}
-              disabled={!otp.every((digit) => digit !== '')}
+              disabled={!isComplete || isSubmitting}
               onPress={handleVerify}>
-              <Text style={styles.verifyButtonText}>Verify OTP</Text>
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.verifyButtonText}>Verify OTP</Text>
+              )}
             </TouchableOpacity>
 
-            {/* This empty view ensures the white background extends to fill the screen */}
             <View style={{ flex: 1 }} />
           </View>
         </ScrollView>
@@ -208,12 +268,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   otpInput: {
-    width: 60,
-    height: 60,
+    width: 48,
+    height: 56,
     borderWidth: 1,
     borderColor: '#E2E2E2',
     borderRadius: 10,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   timerText: {

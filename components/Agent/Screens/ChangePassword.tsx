@@ -1,24 +1,24 @@
-import { BackArrow } from 'components/Svg';
-import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { BackArrow } from 'components/Svg';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { changePassword } from 'lib/api/auth';
+import { getErrorMessage } from 'lib/api/errors';
+import LottieView from 'lottie-react-native';
+import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  ScrollView,
-  Modal,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
-import { StyleSheet } from 'react-native';
-import LottieView from 'lottie-react-native';
-
-type ScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'Profile'>;
+import { useToastStore } from 'stores/useToastStore';
 
 interface FormData {
   oldPassword: string;
@@ -27,9 +27,10 @@ interface FormData {
 }
 
 const ChangePassword = () => {
-  const navigation = useNavigation<ScreenNavigationProp>();
-    const [showChangeModal, setShowChangeModal] = useState(false);
-  
+  const router = useRouter();
+  const { showToast } = useToastStore();
+  const [showChangeModal, setShowChangeModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -39,33 +40,59 @@ const ChangePassword = () => {
     confirmNewPassword: '',
   });
 
-  const isValid = () => {
-    return (
-      !formData.newPassword ||
-      !formData.oldPassword ||
-      !formData.confirmNewPassword ||
-      formData.newPassword.trim() !== formData.confirmNewPassword.trim()
-    );
-  };
+  const passwordPattern =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-  const handleResetPassword = () => setShowChangeModal(true);
+  const isInvalid =
+    !formData.oldPassword ||
+    !formData.newPassword ||
+    !formData.confirmNewPassword ||
+    formData.newPassword !== formData.confirmNewPassword ||
+    !passwordPattern.test(formData.newPassword);
+
+  const handleResetPassword = async () => {
+    if (isInvalid || isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+      const result = await changePassword({
+        currentPassword: formData.oldPassword,
+        newPassword: formData.newPassword,
+      });
+
+      if (!result.success) {
+        showToast({
+          type: 'error',
+          message: result.message || 'Failed to change password.',
+        });
+        return;
+      }
+
+      setShowChangeModal(true);
+    } catch (error) {
+      showToast({
+        type: 'error',
+        message: getErrorMessage(error, 'Failed to change password.'),
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleCloseModal = () => {
     setShowChangeModal(false);
-    navigation.popTo('AgentSettings');
+    router.back();
   };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}>
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <StatusBar style="light" />
 
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <BackArrow />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Change Password</Text>
@@ -73,18 +100,16 @@ const ChangePassword = () => {
       </View>
 
       <ScrollView
-        style={{
-          paddingHorizontal: 24,
-          paddingVertical: 24,
-          flex: 1,
-          backgroundColor: '#fff',
-        }}>
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets>
         <View style={styles.inputContainer}>
           <Text style={styles.sectionLabel}>Old Password</Text>
           <TextInput
             placeholder="Enter Current Password"
             placeholderTextColor="#9F9F9F"
-            style={[styles.textInput, { paddingRight: 40 }]} // Make room for eye icon
+            style={[styles.textInput, { paddingRight: 40 }]}
             secureTextEntry={!showOldPassword}
             value={formData.oldPassword}
             onChangeText={(text) => setFormData((prev) => ({ ...prev, oldPassword: text }))}
@@ -98,14 +123,11 @@ const ChangePassword = () => {
           <TouchableOpacity
             onPress={() => setShowOldPassword(!showOldPassword)}
             style={styles.eyeIcon}>
-            {/* Add your eye/eye-off icon here */}
-            <Text>
-              {showOldPassword ? (
-                <Ionicons name="eye-outline" size={24} color="black" />
-              ) : (
-                <Ionicons name="eye-off-outline" size={24} color="black" />
-              )}
-            </Text>
+            <Ionicons
+              name={showOldPassword ? 'eye-outline' : 'eye-off-outline'}
+              size={24}
+              color="black"
+            />
           </TouchableOpacity>
         </View>
 
@@ -114,28 +136,25 @@ const ChangePassword = () => {
           <TextInput
             placeholder="Enter New Password"
             placeholderTextColor="#9F9F9F"
-            style={[styles.textInput, { paddingRight: 40 }]} // Make room for eye icon
+            style={[styles.textInput, { paddingRight: 40 }]}
             secureTextEntry={!showNewPassword}
             value={formData.newPassword}
             onChangeText={(text) => setFormData((prev) => ({ ...prev, newPassword: text }))}
-            textContentType="newPassword" // iOS will suggest strong password
-            autoComplete="new-password" // Help password managers
-            autoCorrect={false} // Disable autocorrect
-            autoCapitalize="none" // Disable auto-capitalization
-            returnKeyType="next" // Show "next" on keyboard
-            blurOnSubmit={false} // Don't dismiss keyboard on submit
+            textContentType="newPassword"
+            autoComplete="new-password"
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="next"
+            blurOnSubmit={false}
           />
           <TouchableOpacity
             onPress={() => setShowNewPassword(!showNewPassword)}
             style={styles.eyeIcon}>
-            {/* Add your eye/eye-off icon here */}
-            <Text>
-              {showNewPassword ? (
-                <Ionicons name="eye-outline" size={24} color="black" />
-              ) : (
-                <Ionicons name="eye-off-outline" size={24} color="black" />
-              )}
-            </Text>
+            <Ionicons
+              name={showNewPassword ? 'eye-outline' : 'eye-off-outline'}
+              size={24}
+              color="black"
+            />
           </TouchableOpacity>
         </View>
 
@@ -144,42 +163,56 @@ const ChangePassword = () => {
           <TextInput
             placeholder="Confirm New Password"
             placeholderTextColor="#9F9F9F"
-            style={[styles.textInput, { paddingRight: 40 }]} // Make room for eye icon
+            style={[styles.textInput, { paddingRight: 40 }]}
             secureTextEntry={!showConfirmPassword}
             value={formData.confirmNewPassword}
-            onChangeText={(text) => setFormData((prev) => ({ ...prev, confirmNewPassword: text }))}
-            textContentType="newPassword" // Match new password type
-            autoComplete="new-password" // Help password managers
-            autoCorrect={false} // Disable autocorrect
-            autoCapitalize="none" // Disable auto-capitalization
-            returnKeyType="done" // Show "done" on last field
-            blurOnSubmit={true} // Dismiss keyboard on submit
+            onChangeText={(text) =>
+              setFormData((prev) => ({ ...prev, confirmNewPassword: text }))
+            }
+            textContentType="newPassword"
+            autoComplete="new-password"
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="done"
+            blurOnSubmit
           />
           <TouchableOpacity
             onPress={() => setShowConfirmPassword(!showConfirmPassword)}
             style={styles.eyeIcon}>
-            {/* Add your eye/eye-off icon here */}
-            <Text>
-              {showConfirmPassword ? (
-                <Ionicons name="eye-outline" size={24} color="black" />
-              ) : (
-                <Ionicons name="eye-off-outline" size={24} color="black" />
-              )}
-            </Text>
+            <Ionicons
+              name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+              size={24}
+              color="black"
+            />
           </TouchableOpacity>
         </View>
+
+        {formData.newPassword.length > 0 && !passwordPattern.test(formData.newPassword) ? (
+          <Text style={styles.hintText}>
+            Use at least 8 characters with uppercase, lowercase, number, and special character.
+          </Text>
+        ) : null}
+
+        {formData.confirmNewPassword.length > 0 &&
+        formData.newPassword !== formData.confirmNewPassword ? (
+          <Text style={styles.hintText}>Passwords must match.</Text>
+        ) : null}
+
         <TouchableOpacity
-          // disabled={isValid()}
-          style={[styles.submitButton, { opacity: isValid() ? 0.5 : 1 }]}
+          style={[styles.submitButton, { opacity: isInvalid || isSubmitting ? 0.5 : 1 }]}
           onPress={handleResetPassword}
-          >
-          <Text style={styles.submitButtonText}>Reset Password</Text>
+          disabled={isInvalid || isSubmitting}>
+          {isSubmitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.submitButtonText}>Reset Password</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
 
       <Modal
         visible={showChangeModal}
-        transparent={true}
+        transparent
         animationType="fade"
         onRequestClose={handleCloseModal}>
         <View style={styles.addModalOverlay}>
@@ -237,6 +270,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
   },
+  scroll: {
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   sectionLabel: {
     position: 'absolute',
     left: '5%',
@@ -252,8 +291,6 @@ const styles = StyleSheet.create({
   inputContainer: {
     backgroundColor: '#fff',
     paddingHorizontal: 15,
-    // paddingBottom: 10,
-    // paddingTop: 15,
     paddingVertical: 15,
     borderRadius: 16,
     borderWidth: 0.5,
@@ -272,6 +309,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     fontSize: 14,
     color: '#000',
+  },
+  hintText: {
+    color: '#FF3B30',
+    fontFamily: 'Bahnschrift',
+    fontSize: 12,
+    marginBottom: 16,
+    marginTop: -8,
   },
   submitButton: {
     width: '100%',
@@ -292,9 +336,6 @@ const styles = StyleSheet.create({
   eyeIcon: {
     position: 'absolute',
     right: 15,
-    // top: '50%',
-    // transform: [{ translateY: -10 }],
-    // backgroundColor: 'red',
   },
   addModalOverlay: {
     flex: 1,
@@ -312,9 +353,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 280,
   },
-  iconContainer: {
-    // marginBottom: 20,
-  },
+  iconContainer: {},
   lottieAnimation: {
     width: 100,
     height: 100,
@@ -330,18 +369,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     gap: 12,
-  },
-  logoutButton: {
-    backgroundColor: '#F93030',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontFamily: 'Bahnschrift',
-    fontWeight: '600',
   },
   cancelButton: {
     backgroundColor: 'transparent',

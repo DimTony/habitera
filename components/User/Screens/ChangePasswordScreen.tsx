@@ -1,24 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useRouter } from 'expo-router';
 import { Formik } from 'formik';
+import { changePassword } from 'lib/api/auth';
+import { getErrorMessage } from 'lib/api/errors';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
+  ActivityIndicator,
   StyleSheet,
-  TouchableOpacity,
+  Text,
   TextInput,
-  StatusBar,
-  Alert,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useAppStore } from 'stores/useAppStore';
+import { useToastStore } from 'stores/useToastStore';
 import * as Yup from 'yup';
 
-import { RootStackParamList } from '../types/navigation';
 import TabsLayout from '../TabsLayout';
-
-type ChangePasswordNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface PasswordFormValues {
   oldPassword: string;
@@ -27,14 +25,12 @@ interface PasswordFormValues {
 }
 
 const ChangePasswordSchema = Yup.object().shape({
-  oldPassword: Yup.string()
-    .min(6, 'Password must be at least 6 characters')
-    .required('Old password is required'),
+  oldPassword: Yup.string().required('Current password is required'),
   newPassword: Yup.string()
-    .min(6, 'Password must be at least 6 characters')
+    .min(8, 'Password must be at least 8 characters')
     .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+      'Password must contain uppercase, lowercase, number, and special character'
     )
     .required('New password is required'),
   confirmPassword: Yup.string()
@@ -43,34 +39,38 @@ const ChangePasswordSchema = Yup.object().shape({
 });
 
 const ChangePasswordScreen: React.FC = () => {
-  const navigation = useNavigation<ChangePasswordNavigationProp>();
+  const router = useRouter();
   const { themeColors } = useAppStore();
-
+  const { showToast } = useToastStore();
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleGoBack = (): void => {
-    navigation.goBack();
-  };
-
   const handleResetPassword = async (values: PasswordFormValues): Promise<void> => {
     try {
-      // Simulate API call
-      console.log('Changing password with values:', {
-        oldPassword: values.oldPassword,
+      const result = await changePassword({
+        currentPassword: values.oldPassword,
         newPassword: values.newPassword,
       });
 
-      // Show success message
-      Alert.alert('Success', 'Password changed successfully!', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      if (!result.success) {
+        showToast({
+          type: 'error',
+          message: result.message || 'Failed to change password.',
+        });
+        return;
+      }
+
+      showToast({
+        type: 'success',
+        message: result.message || 'Password changed successfully.',
+      });
+      router.back();
     } catch (error) {
-      Alert.alert('Error', 'Failed to change password. Please try again.');
+      showToast({
+        type: 'error',
+        message: getErrorMessage(error, 'Failed to change password.'),
+      });
     }
   };
 
@@ -122,8 +122,7 @@ const ChangePasswordScreen: React.FC = () => {
   );
 
   return (
-    <TabsLayout tabName="Change Password" onBack={() => navigation.goBack()}>
-      {/* Form */}
+    <TabsLayout tabName="Change Password" onBack={() => router.back()}>
       <View style={styles.content}>
         <Formik
           initialValues={{
@@ -142,6 +141,7 @@ const ChangePasswordScreen: React.FC = () => {
             handleSubmit,
             isValid,
             dirty,
+            isSubmitting,
           }) => (
             <>
               <View style={styles.form}>
@@ -185,16 +185,19 @@ const ChangePasswordScreen: React.FC = () => {
                 />
               </View>
 
-              {/* Reset Password Button */}
               <TouchableOpacity
                 style={[
                   styles.resetButton,
                   { backgroundColor: themeColors?.primaryColor || '#6B9B76' },
-                  (!isValid || !dirty) && styles.resetButtonDisabled,
+                  (!isValid || !dirty || isSubmitting) && styles.resetButtonDisabled,
                 ]}
                 onPress={() => handleSubmit()}
-                disabled={!isValid || !dirty}>
-                <Text style={styles.resetButtonText}>Reset Password</Text>
+                disabled={!isValid || !dirty || isSubmitting}>
+                {isSubmitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.resetButtonText}>Reset Password</Text>
+                )}
               </TouchableOpacity>
             </>
           )}
@@ -205,34 +208,6 @@ const ChangePasswordScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingTop: 60,
-    backgroundColor: '#f8f8f8',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-  },
-  headerRight: {
-    width: 40,
-  },
   content: {
     flex: 1,
     paddingHorizontal: 20,

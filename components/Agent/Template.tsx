@@ -1,5 +1,4 @@
-import { StatusBar } from 'expo-status-bar';
-import { View, Text } from 'react-native';
+import { View, Text, StatusBar } from 'react-native';
 
 const AgentHomeScreen = () => {
   return (
@@ -10,7 +9,7 @@ const AgentHomeScreen = () => {
         alignItems: 'center',
         backgroundColor: '#ffffff',
       }}>
-      <StatusBar style="auto" backgroundColor="#cec7c7" />
+      <StatusBar barStyle="default" backgroundColor="#cec7c7" />
       <Text>AgentHomeScreen</Text>
     </View>
   );

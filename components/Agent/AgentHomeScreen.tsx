@@ -1,22 +1,29 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Image,
-  SafeAreaView,
-  ScrollView,
   FlatList,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import EvilIcons from '@expo/vector-icons/EvilIcons';
-import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from 'components/ThemedText';
 import { generateStableGradientPair, getInitials } from 'lib/helpers';
-import useSession from 'hooks/useSession';
+import { resolveAvatarSource } from 'lib/avatars';
+import { getMyProfile } from 'lib/api/profile';
+import { deleteProperty, getAgentProperties } from 'lib/api/properties';
+import { getErrorMessage } from 'lib/api/errors';
+import type { PropertyDto } from 'lib/api/types';
+import { syncLocalUser } from 'lib/auth/session';
+import { mapPropertyDto, type AppProperty } from 'lib/properties/mapProperty';
 import { useAppStore } from 'stores/useAppStore';
+import { useToastStore } from 'stores/useToastStore';
 import {
   BathIcon,
   BedIcon,
@@ -26,297 +33,347 @@ import {
   PhoneIncoming,
   TrashIcon,
 } from 'components/Svg';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AntDesign, SimpleLineIcons } from '@expo/vector-icons';
+import { AntDesign } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
-import PropertyItem from './UI/PropertyItem';
-import { useRouter } from 'expo-router';
-import { AgentRootStackParamList } from 'components/User/types/navigation';
 
 export const FLOATING_BUTTON_SPACE = 130;
-type HomeScreenNavigationProp = NativeStackNavigationProp<AgentRootStackParamList, 'MainTabs'>;
 
-// No Properties Content (when no listings exist)
-const NoPropertyScreen = () => (
+type AgentListing = AppProperty & {
+  status?: string | null;
+  isPublished?: boolean;
+  rawStatus?: string;
+  reviewSubmittedAt?: string | null;
+  rejectionReason?: string | null;
+};
+
+function toAgentListing(dto: PropertyDto): AgentListing {
+  const mapped = mapPropertyDto(dto);
+  return {
+    ...mapped,
+    status: dto.status,
+    isPublished: dto.isPublished,
+    rawStatus: dto.status,
+    reviewSubmittedAt: dto.reviewSubmittedAt,
+    rejectionReason: dto.rejectionReason,
+  };
+}
+
+function formatListingPrice(property: AgentListing) {
+  const amount = Number(property.price ?? 0).toLocaleString();
+  const unit = property.priceUnit ? `/${property.priceUnit.toLowerCase()}` : '';
+  return `${property.currency}${amount}${unit}`;
+}
+
+function isActiveListing(property: AgentListing) {
+  return (
+    property.isPublished === true &&
+    (normalizeStatus(property.status) === 'active' ||
+      normalizeStatus(property.rawStatus) === 'active')
+  );
+}
+
+function normalizeStatus(status?: string | null) {
+  return String(status ?? '').trim().toLowerCase();
+}
+
+function isUnderReviewListing(property: AgentListing) {
+  // Only real pending listings — never invent placeholder rows client-side.
+  return normalizeStatus(property.status) === 'pending' || normalizeStatus(property.rawStatus) === 'pending';
+}
+
+function isInactiveListing(property: AgentListing) {
+  const status = property.status || property.rawStatus || '';
+  return ['Inactive', 'Withdrawn', 'Expired', 'Sold'].includes(status);
+}
+
+const NoPropertyScreen = ({
+  onListPress,
+  title = 'Showcase Your Property Today',
+  subtitle = 'List your properties live and capture potential buyers and tenants',
+  ctaLabel = 'List a Property',
+}: {
+  onListPress: () => void;
+  title?: string;
+  subtitle?: string;
+  ctaLabel?: string;
+}) => (
   <View style={styles.noPropertiesContent}>
     <View style={styles.illustrationContainer}>
       <Image source={require('../../assets/images/no-property.png')} />
     </View>
 
     <View style={styles.ctaContainer}>
-      <Text style={styles.ctaTitle}>Showcase Your Property Today</Text>
-      <Text style={styles.ctaSubtitle}>
-        List your properties live and capture potential buyers and tenants
-      </Text>
+      <Text style={styles.ctaTitle}>{title}</Text>
+      <Text style={styles.ctaSubtitle}>{subtitle}</Text>
     </View>
 
-    <TouchableOpacity style={styles.listButton}>
-      <Text style={styles.listButtonText}>List a Property</Text>
+    <TouchableOpacity style={styles.listButton} onPress={onListPress}>
+      <Text style={styles.listButtonText}>{ctaLabel}</Text>
     </TouchableOpacity>
   </View>
 );
 
-const ActiveListingsContent = ({ properties }: { properties: any }) => {
-  const navigation = useNavigation<HomeScreenNavigationProp>();
+const ListingCard = ({
+  property,
+  onPress,
+  onDelete,
+  badge,
+}: {
+  property: AgentListing;
+  onPress: () => void;
+  onDelete: () => void;
+  badge?: string;
+}) => (
+  <TouchableOpacity
+    onPress={onPress}
+    style={{
+      flexDirection: 'row',
+      backgroundColor: '#fff',
+      paddingHorizontal: 8,
+      paddingVertical: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+      gap: 10,
+      borderRadius: 18,
+      marginBottom: 16,
+    }}>
+    <Image source={property.imageSource} style={styles.propertyImage} />
+
+    <View
+      style={{
+        flex: 1,
+        justifyContent: 'space-between',
+        paddingVertical: 5,
+        paddingHorizontal: 5,
+      }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+        <Text style={{ fontFamily: 'Bahnschrift', fontSize: 16, flex: 1 }} numberOfLines={1}>
+          {property.propertyName}
+        </Text>
+        {badge ? (
+          <Text style={{ fontSize: 10, color: '#818181', fontFamily: 'Bahnschrift' }}>{badge}</Text>
+        ) : null}
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+        <LocationPin />
+        <Text
+          numberOfLines={2}
+          ellipsizeMode="tail"
+          style={{
+            fontFamily: 'Bahnschrift',
+            fontWeight: '300',
+            fontSize: 12,
+            color: '#818181',
+            flexShrink: 1,
+          }}>
+          {property.location}
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+          <BedIcon />
+          <Text style={{ fontSize: 11, color: '#818181', fontFamily: 'Bahnschrift' }}>
+            {property.bedrooms}
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+          <BathIcon />
+          <Text style={{ fontSize: 11, color: '#818181', fontFamily: 'Bahnschrift' }}>
+            {property.bathrooms}
+          </Text>
+        </View>
+      </View>
+
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View style={{ gap: 5 }}>
+          <Text style={{ fontSize: 10, color: '#818181', fontFamily: 'Bahnschrift' }}>Price</Text>
+          <Text style={{ fontFamily: 'Bahnschrift', fontSize: 14 }}>
+            {formatListingPrice(property)}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={onDelete}
+          style={{
+            borderWidth: 1,
+            borderColor: 'gray',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 15,
+            width: 30,
+            height: 30,
+          }}>
+          <TrashIcon />
+        </TouchableOpacity>
+      </View>
+    </View>
+  </TouchableOpacity>
+);
+
+const ListingsContent = ({
+  properties,
+  badgeForItem,
+  onListPress,
+  onDelete,
+  refreshing,
+  onRefresh,
+  emptyTitle,
+  emptySubtitle,
+  emptyCtaLabel,
+}: {
+  properties: AgentListing[];
+  badgeForItem?: (property: AgentListing) => string | undefined;
+  onListPress: () => void;
+  onDelete: (property: AgentListing) => void;
+  refreshing: boolean;
+  onRefresh: () => void;
+  emptyTitle?: string;
+  emptySubtitle?: string;
+  emptyCtaLabel?: string;
+}) => {
+  const router = useRouter();
 
   if (properties.length === 0) {
-    return <NoPropertyScreen />;
+    return (
+      <NoPropertyScreen
+        onListPress={onListPress}
+        title={emptyTitle}
+        subtitle={emptySubtitle}
+        ctaLabel={emptyCtaLabel}
+      />
+    );
   }
-
-  const handlePropertyPress: (property: any) => void = (property) => {
-    navigation.navigate('ViewProperty', {
-      propertyId: property.id,
-      // propertyName: property.propertyName,
-      // location: property.location,
-      // bedrooms: property.bedrooms,
-      // bathrooms: property.bathrooms,
-      // price: property.price,
-      // imageSource: property.imageSource,
-      // images: property.images,
-    });
-  };
 
   return (
     <FlatList
       data={properties}
-      keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={[styles.activeListContainer]}
-      // Add these props to ensure proper scrolling behavior
-      showsVerticalScrollIndicator={false}
-      bounces={true}
-      // This ensures the last item can scroll up past the floating button
-      contentInset={{ bottom: FLOATING_BUTTON_SPACE }}
-      contentInsetAdjustmentBehavior="never"
-      // For Android compatibility
-      ListFooterComponent={() => <View style={{ height: FLOATING_BUTTON_SPACE }} />}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          onPress={() => handlePropertyPress(item)}
-          style={{
-            flexDirection: 'row',
-            backgroundColor: '#fff',
-            paddingHorizontal: 8,
-            paddingVertical: 10,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
-            gap: 10,
-            borderRadius: 18,
-            marginBottom: 16,
-          }}>
-          <Image
-            source={require('../../assets/images/onboarding-3.png')}
-            style={styles.propertyImage}
-          />
-
-          <View
-            style={{
-              flex: 1,
-              justifyContent: 'space-between',
-              paddingVertical: 5,
-              paddingHorizontal: 5,
-            }}>
-            <Text style={{ fontFamily: 'Bahnschrift', fontSize: 16 }}>Clement</Text>
-
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-              <LocationPin />
-              <Text
-                numberOfLines={2}
-                ellipsizeMode="tail"
-                style={{
-                  fontFamily: 'Bahnschrift',
-                  fontWeight: '300',
-                  fontSize: 12,
-                  color: '#818181',
-                  flexShrink: 1,
-                }}>
-                19. Adeniran Ogunsanya Street, Surulere, Lagos
-              </Text>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <BedIcon />
-                <Text style={{ fontSize: 11, color: '#818181', fontFamily: 'Bahnschrift' }}>2</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <BathIcon />
-                <Text style={{ fontSize: 11, color: '#818181', fontFamily: 'Bahnschrift' }}>2</Text>
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <View style={{ gap: 5 }}>
-                <Text style={{ fontSize: 10, color: '#818181', fontFamily: 'Bahnschrift' }}>
-                  Price
-                </Text>
-                <Text style={{ fontFamily: 'Bahnschrift', fontSize: 14 }}>#1,200,000/year</Text>
-              </View>
-              <TouchableOpacity
-                style={{
-                  borderWidth: 1,
-                  borderColor: 'gray',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 15, // Changed from '100%' to numeric value
-                  width: 30,
-                  height: 30,
-                }}>
-                <TrashIcon />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      )}
-    />
-  );
-};
-
-const UnderReviewContent = ({ properties }: { properties: any }) => {
-  const reviewProperties = properties.filter((p: any) => p.status === 'review');
-
-  if (reviewProperties.length === 0) {
-    return <NoPropertyScreen />;
-  }
-
-  return (
-    <FlatList
-      data={reviewProperties}
-      keyExtractor={(item) => item.id.toString()}
+      keyExtractor={(item) => item.id}
       contentContainerStyle={[styles.activeListContainer]}
       showsVerticalScrollIndicator={false}
-      bounces={true}
+      bounces
       contentInset={{ bottom: FLOATING_BUTTON_SPACE }}
       contentInsetAdjustmentBehavior="never"
-      ListFooterComponent={() => <View style={{ height: FLOATING_BUTTON_SPACE }} />}
-      renderItem={({ item }) => <PropertyItem />}
-    />
-  );
-};
-
-const InactiveListingsContent = ({ properties }: { properties: any }) => {
-  const inactiveProperties = properties.filter((p: any) => p.status === 'inactive');
-
-  if (inactiveProperties.length === 0) {
-    return <NoPropertyScreen />;
-  }
-
-  return (
-    <FlatList
-      data={inactiveProperties}
-      keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={{
-        paddingHorizontal: 24,
-      }}
-      showsVerticalScrollIndicator={false}
-      bounces={true}
-      // This ensures the last item can scroll up past the floating button
-      contentInset={{ bottom: FLOATING_BUTTON_SPACE }}
-      contentInsetAdjustmentBehavior="never"
-      // For Android compatibility
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListFooterComponent={() => <View style={{ height: FLOATING_BUTTON_SPACE }} />}
       renderItem={({ item }) => (
-        <View style={[styles.propertyCard, styles.inactiveCard]}>
-          <Image
-            source={{ uri: item.image }}
-            style={[styles.propertyImage, styles.inactiveImage]}
-          />
-          <View style={styles.propertyInfo}>
-            <Text style={[styles.propertyTitle, styles.inactiveText]}>{item.title}</Text>
-            <Text style={[styles.propertyLocation, styles.inactiveText]}>{item.location}</Text>
-            <Text style={[styles.propertyPrice, styles.inactiveText]}>{item.price}</Text>
-            <View style={styles.inactiveStatus}>
-              <Text style={styles.inactiveReason}>Reason: {item.inactiveReason}</Text>
-              <Text style={styles.inactiveDate}>Deactivated {item.deactivatedDays} days ago</Text>
-            </View>
-          </View>
-          <View style={styles.propertyActions}>
-            <TouchableOpacity style={[styles.actionButton, styles.reactivateButton]}>
-              <Text style={styles.reactivateButtonText}>Reactivate</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.actionButtonText}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <ListingCard
+          property={item}
+          badge={badgeForItem?.(item)}
+          onPress={() => router.push(`/(agent)/property/${item.id}`)}
+          onDelete={() => onDelete(item)}
+        />
       )}
     />
   );
 };
 
 const AgentHomeScreen = () => {
-  const { user, resetState } = useAppStore();
+  const { user } = useAppStore();
+  const { showToast } = useToastStore();
   const router = useRouter();
-  const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  const [properties, setProperties] = useState<any[]>([]);
+  const [properties, setProperties] = useState<AgentListing[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'Active Listings' | 'Under Review' | 'Inactive Listings'
   >('Active Listings');
+  const profileCompleted = Boolean(user?.profileCompleted);
+  const completionPercentage = Number(user?.completionPercentage ?? 0);
+  const displayName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Agent';
 
-  useEffect(() => {
-    console.log('sss', user);
-    // Mock data for demonstration - replace with actual API call
-    setProperties([
-      {
-        id: 1,
-        title: 'Modern 3BR Apartment',
-        location: 'Lagos Island, Lagos',
-        price: '₦2,500,000/year',
-        image: 'https://example.com/property1.jpg',
-        views: 245,
-        inquiries: 12,
-        status: 'active',
-      },
-      {
-        id: 2,
-        title: 'Luxury 4BR Duplex',
-        location: 'Victoria Island, Lagos',
-        price: '₦5,000,000/year',
-        image: 'https://example.com/property2.jpg',
-        views: 189,
-        inquiries: 8,
-        status: 'active',
-      },
-      {
-        id: 3,
-        title: 'Cozy 2BR Flat',
-        location: 'Ikeja, Lagos',
-        price: '₦1,800,000/year',
-        image: 'https://example.com/property3.jpg',
-        submittedDays: 3,
-        status: 'review',
-      },
-      {
-        id: 4,
-        title: 'Executive 5BR Villa',
-        location: 'Ikoyi, Lagos',
-        price: '₦8,000,000/year',
-        image: 'https://example.com/property4.jpg',
-        inactiveReason: 'Expired listing',
-        deactivatedDays: 15,
-        status: 'active',
-      },
-      {
-        id: 5,
-        title: 'Modern 3BR Apartment',
-        location: 'Lagos Island, Lagos',
-        price: '₦2,500,000/year',
-        image: 'https://example.com/property1.jpg',
-        views: 245,
-        inquiries: 12,
-        status: 'active',
-      },
-    ]);
-  }, [user]);
+  const loadProperties = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
+    if (mode === 'refresh') setIsRefreshing(true);
+    else setIsLoading(true);
+
+    try {
+      const result = await getAgentProperties({ pageNumber: 1, pageSize: 50 });
+      if (!result.success) {
+        showToast({
+          type: 'error',
+          message: result.message || 'Unable to load your listings.',
+        });
+        return;
+      }
+      setProperties(
+        (result.data ?? [])
+          .map(toAgentListing)
+          .filter((item) => item.status !== 'Deleted' && item.rawStatus !== 'Deleted')
+      );
+    } catch (error) {
+      showToast({
+        type: 'error',
+        message: getErrorMessage(error, 'Unable to load your listings.'),
+      });
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [showToast]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        try {
+          const result = await getMyProfile();
+          if (!active || !result.success || !result.data) return;
+          await syncLocalUser(result.data);
+        } catch {
+          // Keep cached session if refresh fails.
+        }
+
+        if (active) {
+          await loadProperties('initial');
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [loadProperties])
+  );
+
+  const handleDeleteProperty = useCallback(
+    (property: AgentListing) => {
+      Alert.alert('Delete listing', `Remove "${property.propertyName}"?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await deleteProperty(property.id);
+              if (!result.success) {
+                showToast({
+                  type: 'error',
+                  message: result.message || 'Unable to delete listing.',
+                });
+                return;
+              }
+              setProperties((prev) => prev.filter((item) => item.id !== property.id));
+              showToast({ type: 'success', message: 'Listing deleted.' });
+            } catch (error) {
+              showToast({
+                type: 'error',
+                message: getErrorMessage(error, 'Unable to delete listing.'),
+              });
+            }
+          },
+        },
+      ]);
+    },
+    [showToast]
+  );
 
   const [fontsLoaded] = useFonts({
     Bahnschrift: require('../../assets/fonts/BAHNSCHRIFT.ttf'),
-    // Bahnschrift1: require('../../assets/fonts/BAHNSCHRIFT.TTF'),
   });
 
   const tabs = ['Active Listings', 'Under Review', 'Inactive Listings'];
@@ -340,22 +397,61 @@ const AgentHomeScreen = () => {
 
   const gradientColors = useMemo(() => {
     return generateStableGradientPair(user?._id ?? user?.id ?? '');
-  }, [user?.id]);
+  }, [user?.id, user?._id]);
 
-  // Function to render content based on active tab
+  const activeListings = useMemo(() => properties.filter(isActiveListing), [properties]);
+  const underReviewListings = useMemo(
+    () => properties.filter(isUnderReviewListing),
+    [properties]
+  );
+  const inactiveListings = useMemo(() => properties.filter(isInactiveListing), [properties]);
+
+  const goToAddProperty = () => router.push('/(agent)/add-property');
+
   const renderTabContent = () => {
+    if (isLoading) {
+      return (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 40 }}>
+          <ActivityIndicator size="large" color="#000" />
+        </View>
+      );
+    }
+
     switch (activeTab) {
-      case 'Active Listings':
-        return (
-          <ActiveListingsContent properties={properties.filter((p) => p.status === 'active')} />
-        );
       case 'Under Review':
-        return <UnderReviewContent properties={properties} />;
+        return (
+          <ListingsContent
+            properties={underReviewListings}
+            onListPress={goToAddProperty}
+            onDelete={handleDeleteProperty}
+            refreshing={isRefreshing}
+            onRefresh={() => loadProperties('refresh')}
+            badgeForItem={(item) => (item.reviewSubmittedAt ? 'In review' : 'Draft')}
+            emptyTitle="Nothing under review"
+            emptySubtitle="Submitted listings will appear here until an admin approves them."
+            emptyCtaLabel="Add a listing"
+          />
+        );
       case 'Inactive Listings':
-        return <InactiveListingsContent properties={properties} />;
+        return (
+          <ListingsContent
+            properties={inactiveListings}
+            onListPress={goToAddProperty}
+            onDelete={handleDeleteProperty}
+            refreshing={isRefreshing}
+            onRefresh={() => loadProperties('refresh')}
+          />
+        );
+      case 'Active Listings':
       default:
         return (
-          <ActiveListingsContent properties={properties.filter((p) => p.status === 'active')} />
+          <ListingsContent
+            properties={activeListings}
+            onListPress={goToAddProperty}
+            onDelete={handleDeleteProperty}
+            refreshing={isRefreshing}
+            onRefresh={() => loadProperties('refresh')}
+          />
         );
     }
   };
@@ -386,33 +482,34 @@ const AgentHomeScreen = () => {
                   style={{
                     flexDirection: 'row',
                   }}>
-                  {user?.pix ? (
-                    <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-                      <Image source={{ uri: user.pix }} style={styles.questionImage} />
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                  <TouchableOpacity onPress={() => router.push('/(agent)/profile')}>
+                    {user?.profilePhoto ? (
+                      <Image
+                        source={resolveAvatarSource(user.profilePhoto)}
+                        style={styles.questionImage}
+                      />
+                    ) : (
                       <LinearGradient
                         colors={gradientColors}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={styles.questionImage}>
                         <ThemedText style={styles.initialsText}>
-                          {getInitials(user.name)}
+                          {getInitials(displayName)}
                         </ThemedText>
                       </LinearGradient>
-                    </TouchableOpacity>
-                  )}
+                    )}
+                  </TouchableOpacity>
                   <View
                     style={{
                       flexDirection: 'column',
                     }}>
                     <Text style={{ fontFamily: 'Bahnschrift', color: '#fff' }}>Hello,</Text>
-                    <Text style={styles.userName}>Ajirioghene Okpeva</Text>
+                    <Text style={styles.userName}>{displayName}</Text>
                   </View>
                 </View>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('Notifications')}
+                  onPress={() => router.push('/(agent)/notifications')}
                   style={{
                     backgroundColor: '#fff',
                     justifyContent: 'center',
@@ -428,15 +525,15 @@ const AgentHomeScreen = () => {
               <View style={styles.contactInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <MailIcon />
-                  <Text style={styles.contactText}>ajiriogheneokpeva@gmail.com</Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                  <Text style={styles.contactText}>{user?.email || '—'}</Text>
+                  <TouchableOpacity onPress={() => router.push('/(agent)/profile')}>
                     <Edit />
                   </TouchableOpacity>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <PhoneIncoming />
-                  <Text style={styles.contactText}>08033088819</Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                  <Text style={styles.contactText}>{user?.phoneNumber || 'Add phone'}</Text>
+                  <TouchableOpacity onPress={() => router.push('/(agent)/profile')}>
                     <Edit />
                   </TouchableOpacity>
                 </View>
@@ -444,6 +541,25 @@ const AgentHomeScreen = () => {
             </View>
           </View>
         </View>
+
+        {!profileCompleted ? (
+          <TouchableOpacity
+            style={styles.completeProfileCta}
+            onPress={() => router.push('/(agent)/profile')}
+            activeOpacity={0.85}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.completeProfileTitle}>Complete your profile</Text>
+              <Text style={styles.completeProfileSubtitle}>
+                {completionPercentage > 0
+                  ? `${completionPercentage}% done — finish your agent details to build trust.`
+                  : 'Add your details so buyers can recognize and trust your listings.'}
+              </Text>
+            </View>
+            <View style={styles.completeProfileButton}>
+              <Text style={styles.completeProfileButtonText}>Continue</Text>
+            </View>
+          </TouchableOpacity>
+        ) : null}
 
         {/* Tab Navigation */}
         <View style={styles.tabContainer}>
@@ -467,9 +583,9 @@ const AgentHomeScreen = () => {
         </TouchableOpacity> */}
 
         <TouchableOpacity
-          onPress={() => navigation.navigate('AddProperty')}
+          onPress={() => router.push('/(agent)/add-property')}
           style={{ position: 'absolute', bottom: '15%', right: '6%' }}>
-          <AntDesign name="pluscircle" size={50} color="black" />
+          <AntDesign name="plus-circle" size={50} color="black" />
           {/* <SimpleLineIcons name="plus" size={50} color="white" style={{backgroundColor: 'black', borderRadius: '100%'}} /> */}
         </TouchableOpacity>
       </View>
@@ -492,6 +608,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
+  },
+  completeProfileCta: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: 16,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  completeProfileTitle: {
+    fontFamily: 'Bahnschrift',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F1F1F',
+    marginBottom: 4,
+  },
+  completeProfileSubtitle: {
+    fontFamily: 'Bahnschrift',
+    fontSize: 12,
+    color: '#5C5C5C',
+    lineHeight: 16,
+  },
+  completeProfileButton: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#1a1a1a',
+  },
+  completeProfileButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Bahnschrift',
   },
   questionImage: {
     width: 48,
