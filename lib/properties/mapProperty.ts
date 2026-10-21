@@ -58,6 +58,10 @@ function toImageSource(url?: string | null): ImageSourcePropType {
   return FALLBACK_IMAGE;
 }
 
+export function listingImageSource(url?: string | null): ImageSourcePropType {
+  return toImageSource(url);
+}
+
 export function mapPropertyDto(dto: PropertyDto): AppProperty {
   const sortedImages = [...(dto.images ?? [])].sort(
     (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)

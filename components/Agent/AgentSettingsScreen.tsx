@@ -21,6 +21,7 @@ import {
 import { Entypo } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAppStore } from 'stores/useAppStore';
+import { disconnectChat } from 'lib/chat/hub';
 import LottieView from 'lottie-react-native';
 
 interface SettingsItem {
@@ -39,6 +40,7 @@ const AgentSettingsScreen = () => {
   const handleLogoutPress = () => setShowLogoutModal(true);
   const handleConfirmLogout = () => {
     setShowLogoutModal(false);
+    void disconnectChat();
     resetState();
   };
   const handleCancelLogout = () => setShowLogoutModal(false);

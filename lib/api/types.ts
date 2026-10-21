@@ -112,6 +112,22 @@ export interface UpdateAgentProfileRequest {
   agencyName?: string;
 }
 
+export interface AgentPublicProfile {
+  id: string;
+  fullName: string;
+  profilePhoto?: string | null;
+  agencyName?: string | null;
+  licenseNumber?: string | null;
+  averageRating: number;
+  totalReviews: number;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  memberSince: string;
+  listingCount: number;
+  listings: PropertyDto[];
+}
+
 export interface PropertyImageDto {
   id: string;
   imageUrl: string;
@@ -149,6 +165,7 @@ export interface PropertyDto {
   isFavorited?: boolean;
   viewCount?: number;
   favoriteCount?: number;
+  contactCount?: number;
   images?: PropertyImageDto[];
   primaryImageUrl?: string | null;
   createdAt?: string;

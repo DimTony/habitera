@@ -33,6 +33,8 @@ type AgentPropertyView = AppProperty & {
   isPublished?: boolean;
   reviewSubmittedAt?: string | null;
   rejectionReason?: string | null;
+  favoriteCount: number;
+  contactCount: number;
 };
 
 function statusLabel(property: AgentPropertyView) {
@@ -82,6 +84,8 @@ const ViewProperty: React.FC = () => {
         isPublished: dto.isPublished,
         reviewSubmittedAt: dto.reviewSubmittedAt,
         rejectionReason: dto.rejectionReason,
+        favoriteCount: dto.favoriteCount ?? 0,
+        contactCount: dto.contactCount ?? 0,
       });
     } catch (error) {
       showToast({
@@ -234,6 +238,21 @@ const ViewProperty: React.FC = () => {
 
         <View style={styles.contentSection} className="rounded-t-lg pt-20">
           <Text style={styles.propertyTitle}>{property.propertyName}</Text>
+
+          <View style={styles.statsRow}>
+            <View style={styles.stat}>
+              <Text style={styles.statValue}>{property.favoriteCount}</Text>
+              <Text style={styles.statLabel}>
+                {property.favoriteCount === 1 ? 'Bookmark' : 'Bookmarks'}
+              </Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={styles.statValue}>{property.contactCount}</Text>
+              <Text style={styles.statLabel}>
+                {property.contactCount === 1 ? 'Contact' : 'Contacts'}
+              </Text>
+            </View>
+          </View>
 
           <View style={styles.locationRow}>
             <LocationIcon color="#678b83" />
@@ -410,6 +429,31 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 20,
     fontFamily: 'Bahnschrift',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  stat: {
+    flex: 1,
+    backgroundColor: '#678B830D',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  statValue: {
+    fontFamily: 'Bahnschrift',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  statLabel: {
+    marginTop: 2,
+    fontFamily: 'Bahnschrift',
+    fontSize: 12,
+    color: '#678B83',
   },
   locationRow: {
     flexDirection: 'row',

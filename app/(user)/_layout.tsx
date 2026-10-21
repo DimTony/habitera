@@ -9,6 +9,8 @@ export default function UserLayout() {
         <Stack.Screen name="property/[id]" />
         <Stack.Screen name="change-password" />
         <Stack.Screen name="profile" />
+        <Stack.Screen name="conversation" />
+        <Stack.Screen name="agent/[id]" />
         <Stack.Screen name="filter" options={{ presentation: 'modal' }} />
       </Stack>
     </View>

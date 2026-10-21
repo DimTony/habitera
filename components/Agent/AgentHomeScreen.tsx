@@ -45,6 +45,8 @@ type AgentListing = AppProperty & {
   rawStatus?: string;
   reviewSubmittedAt?: string | null;
   rejectionReason?: string | null;
+  favoriteCount: number;
+  contactCount: number;
 };
 
 function toAgentListing(dto: PropertyDto): AgentListing {
@@ -56,7 +58,13 @@ function toAgentListing(dto: PropertyDto): AgentListing {
     rawStatus: dto.status,
     reviewSubmittedAt: dto.reviewSubmittedAt,
     rejectionReason: dto.rejectionReason,
+    favoriteCount: dto.favoriteCount ?? 0,
+    contactCount: dto.contactCount ?? 0,
   };
+}
+
+function countLabel(count: number, singular: string, plural: string) {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 function formatListingPrice(property: AgentListing) {
@@ -189,6 +197,11 @@ const ListingCard = ({
           </Text>
         </View>
       </View>
+
+      <Text style={{ fontSize: 11, color: '#678B83', fontFamily: 'Bahnschrift' }}>
+        {countLabel(property.favoriteCount, 'bookmark', 'bookmarks')} ·{' '}
+        {countLabel(property.contactCount, 'contact', 'contacts')}
+      </Text>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <View style={{ gap: 5 }}>

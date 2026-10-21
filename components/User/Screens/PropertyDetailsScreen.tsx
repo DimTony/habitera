@@ -3,6 +3,7 @@ import BedIcon from 'components/Icons/BedIcon';
 import LocationIcon from 'components/Icons/LocationIcon';
 import ToiletIcon from 'components/Icons/ToiletIcon';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { startConversation } from 'lib/api/chat';
 import { getErrorMessage } from 'lib/api/errors';
 import { getPropertyById } from 'lib/api/properties';
 import { mapPropertyDto, type AppProperty } from 'lib/properties/mapProperty';
@@ -26,6 +27,7 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from 'stores/useAppStore';
+import { useChatStore } from 'stores/useChatStore';
 import { useToastStore } from 'stores/useToastStore';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -37,7 +39,9 @@ const PropertyDetailsScreen: React.FC = () => {
   const { themeColors } = useAppStore();
   const { showToast } = useToastStore();
   const [property, setProperty] = useState<AppProperty | null>(null);
+  const [agentId, setAgentId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isContacting, setIsContacting] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [fullscreenVisible, setFullscreenVisible] = useState(false);
   const [fullscreenIndex, setFullscreenIndex] = useState(0);
@@ -67,6 +71,7 @@ const PropertyDetailsScreen: React.FC = () => {
           return;
         }
 
+        setAgentId(result.data.agentId);
         setProperty(mapPropertyDto(result.data));
       } catch (error) {
         if (!active) return;
@@ -88,7 +93,38 @@ const PropertyDetailsScreen: React.FC = () => {
     return `${currency}${price.toLocaleString()}/${unit}`;
   };
 
-  const handleContactAgent = (): void => {};
+  const handleContactAgent = async (): Promise<void> => {
+    if (!property || !agentId || isContacting) return;
+
+    try {
+      setIsContacting(true);
+      const result = await startConversation({
+        agentId,
+        propertyId: property.id,
+      });
+
+      if (!result.success || !result.data) {
+        showToast({
+          type: 'error',
+          message: result.message || 'Unable to start a conversation.',
+        });
+        return;
+      }
+
+      useChatStore.getState().upsertConversation(result.data);
+      router.push({
+        pathname: '/(user)/conversation',
+        params: { conversationId: result.data.id },
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        message: getErrorMessage(error, 'Unable to start a conversation.'),
+      });
+    } finally {
+      setIsContacting(false);
+    }
+  };
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>): void => {
     const slide = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
@@ -303,8 +339,13 @@ const PropertyDetailsScreen: React.FC = () => {
         </View>
         <TouchableOpacity
           style={[styles.contactButton, { backgroundColor: themeColors.primaryColor }]}
-          onPress={handleContactAgent}>
-          <Text style={styles.contactButtonText}>Contact Agent</Text>
+          onPress={handleContactAgent}
+          disabled={isContacting || !agentId}>
+          {isContacting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.contactButtonText}>Contact Agent</Text>
+          )}
         </TouchableOpacity>
       </View>
 

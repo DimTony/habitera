@@ -5,6 +5,7 @@ import { useAppStore } from 'stores/useAppStore';
 import TabsLayout from './TabsLayout';
 import { useToastStore } from 'stores/useToastStore';
 import { useRouter } from 'expo-router';
+import { disconnectChat } from 'lib/chat/hub';
 
 const UserSettingsScreen = () => {
   const router = useRouter();
@@ -76,7 +77,10 @@ const UserSettingsScreen = () => {
   const LogOutItem = () => (
     <TouchableOpacity
       style={[styles.settingsItem, styles.logoutItem]}
-      onPress={resetState}
+      onPress={() => {
+        void disconnectChat();
+        resetState();
+      }}
       activeOpacity={0.7}>
       <View style={styles.settingsItemLeft}>
         <View style={styles.iconContainer}>

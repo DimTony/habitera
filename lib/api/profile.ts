@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import type {
+  AgentPublicProfile,
   AuthUser,
   OperationResult,
   ProfileCompletionStatus,
@@ -11,6 +12,13 @@ const PROFILE = '/api/Profile';
 
 export async function getMyProfile() {
   const { data } = await apiClient.get<OperationResult<AuthUser>>(`${PROFILE}/Me`);
+  return data;
+}
+
+export async function getAgentPublicProfile(agentId: string) {
+  const { data } = await apiClient.get<OperationResult<AgentPublicProfile>>(
+    `${PROFILE}/Agents/${agentId}`
+  );
   return data;
 }
 

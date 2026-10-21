@@ -1,9 +1,7 @@
-// In your AgentChatScreen.tsx, update the navigation prop type and handleChatPress
-
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { BackArrow } from 'components/Svg';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -13,70 +11,87 @@ import {
   StyleSheet,
   Image,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { FLOATING_BUTTON_SPACE } from './AgentHomeScreen';
 import { formatUTCTo12Hour } from 'lib/helpers';
-
-interface Chat {
-  id: string;
-  name: string;
-  preview: string;
-  unread: boolean;
-  unreadCount: string;
-  createdAt: string;
-}
+import { listingImageSource } from 'lib/properties/mapProperty';
+import { getErrorMessage } from 'lib/api/errors';
+import type { ConversationSummary } from 'lib/api/chat';
+import { ensureChatConnection, refreshInbox } from 'lib/chat/hub';
+import { useChatStore } from 'stores/useChatStore';
+import { useToastStore } from 'stores/useToastStore';
 
 const AgentChatScreen = () => {
   const router = useRouter();
-  const [showChats, setShowChats] = useState(true);
+  const conversations = useChatStore((state) => state.conversations);
+  const { showToast } = useToastStore();
+  const [isLoading, setIsLoading] = useState(true);
 
-  const mockChats: Chat[] = [
-    {
-      id: '8',
-      name: 'Divine Ajayi',
-      preview:
-        'The inspection can be scheduled for Thursday evening if you are available. Kindly let me know ahead to enable proper planning.',
-      unread: true,
-      unreadCount: '2',
-      createdAt: '2025-07-20T15:21:00.000Z',
-    },
-    {
-      id: '9',
-      name: 'Anthony Obinna',
-      preview: 'Kindly provide a working budget.',
-      unread: false,
-      unreadCount: '0',
-      createdAt: '2025-07-20T10:59:00.000Z',
-    },
-  ];
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
 
-  const chats = showChats ? mockChats : [];
+      (async () => {
+        try {
+          await ensureChatConnection();
+          const result = await refreshInbox();
+          if (!active) return;
+          if (!result.success) {
+            showToast({
+              type: 'error',
+              message: result.message || 'Unable to load conversations.',
+            });
+          }
+        } catch (error) {
+          if (!active) return;
+          showToast({
+            type: 'error',
+            message: getErrorMessage(error, 'Unable to load conversations.'),
+          });
+        } finally {
+          if (active) setIsLoading(false);
+        }
+      })();
 
-  const handleChatPress = (chat: Chat) => {
-    console.log('PRESSED');
+      return () => {
+        active = false;
+      };
+    }, [showToast])
+  );
 
-    router.push({ pathname: '/(agent)/conversation', params: { chatId: chat.id } });
+  const handleChatPress = (chat: ConversationSummary) => {
+    router.push({ pathname: '/(agent)/conversation', params: { conversationId: chat.id } });
   };
 
-  // Rest of your component remains the same...
-  const renderChatItem = ({ item }: { item: Chat }) => {
+  const renderChatItem = ({ item }: { item: ConversationSummary }) => {
+    const unread = item.unreadCount > 0;
     return (
       <TouchableOpacity
         onPress={() => handleChatPress(item)}
-        style={[styles.chatItem, item.unread && styles.unreadChatItem]}>
-        <Image source={require('../../assets/images/avatar.png')} style={styles.avatar} />
+        style={[styles.chatItem, unread && styles.unreadChatItem]}>
+        <Image source={listingImageSource(item.propertyImageUrl)} style={styles.listingImage} />
 
         <View style={styles.chatContent}>
-          <Text style={styles.chatName}>{item.name}</Text>
+          <Text numberOfLines={1} style={styles.chatName}>
+            {item.propertyTitle || 'Listing'}
+          </Text>
+          <Text numberOfLines={1} style={styles.chatPerson}>
+            {item.otherUserName}
+          </Text>
           <Text numberOfLines={2} ellipsizeMode="tail" style={styles.chatPreview}>
-            {item.preview}
+            {item.lastMessagePreview || 'No messages yet'}
           </Text>
         </View>
 
         <View style={styles.chatMeta}>
-          <Text style={styles.chatTime}>{formatUTCTo12Hour(item.createdAt)}</Text>
-          {item.unread && (
+          {item.lastMessageAt ? (
+            <Text style={styles.chatTime}>{formatUTCTo12Hour(item.lastMessageAt)}</Text>
+          ) : (
+            <View />
+          )}
+          {unread && (
             <View style={styles.unreadBadge}>
               <Text style={styles.unreadText}>{item.unreadCount}</Text>
             </View>
@@ -87,7 +102,11 @@ const AgentChatScreen = () => {
   };
 
   const renderContent = () => {
-    if (chats.length === 0) {
+    if (isLoading) {
+      return <ActivityIndicator style={{ marginTop: 40 }} color="#111" />;
+    }
+
+    if (conversations.length === 0) {
       return (
         <View style={styles.emptyContainer}>
           <LottieView
@@ -107,7 +126,7 @@ const AgentChatScreen = () => {
     return (
       <View style={styles.chatListContainer}>
         <FlatList
-          data={chats}
+          data={conversations}
           keyExtractor={(item) => item.id}
           renderItem={renderChatItem}
           contentContainerStyle={styles.flatListContent}
@@ -127,28 +146,20 @@ const AgentChatScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <StatusBar style="light" />
 
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <BackArrow />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chat</Text>
-
-          {/* Demo Toggle Button */}
-          <TouchableOpacity onPress={() => setShowChats(!showChats)} style={styles.toggleButton}>
-            <Text style={styles.toggleButtonText}>{showChats ? 'Empty' : 'Fill'}</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Content */}
       <View style={styles.content}>{renderContent()}</View>
     </KeyboardAvoidingView>
   );
 };
 
-// Your existing styles remain the same...
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -180,20 +191,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Bahnschrift',
     fontSize: 20,
     fontWeight: '600',
-  },
-  toggleButton: {
-    position: 'absolute',
-    right: 0,
-    backgroundColor: '#333',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  toggleButtonText: {
-    color: 'white',
-    fontFamily: 'Bahnschrift',
-    fontSize: 12,
-    fontWeight: '500',
   },
   content: {
     flex: 1,
@@ -244,14 +241,12 @@ const styles = StyleSheet.create({
   unreadChatItem: {
     backgroundColor: '#E6E6E6',
   },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  listingImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
     marginRight: 14,
-    padding: 1,
-    borderWidth: 0.5,
-    borderColor: '#bfbfbf',
+    backgroundColor: '#eee',
   },
   chatContent: {
     flex: 1,
@@ -262,6 +257,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1a1a1a',
+  },
+  chatPerson: {
+    fontFamily: 'Bahnschrift',
+    fontSize: 12,
+    color: '#678B83',
   },
   chatPreview: {
     fontFamily: 'Bahnschrift',
@@ -282,11 +282,12 @@ const styles = StyleSheet.create({
   },
   unreadBadge: {
     backgroundColor: '#000',
-    width: 20,
+    minWidth: 20,
     height: 20,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 4,
   },
   unreadText: {
     color: '#fff',
